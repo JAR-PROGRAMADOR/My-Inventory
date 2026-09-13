@@ -7,26 +7,30 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
-// No conectamos al arrancar, para que no se caiga
-let db = null;
-if(process.env.DB_HOST){
-  db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 3306
-  });
-}
+// Usamos POOL para que no se caiga
+const db = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0
+});
 
 app.get('/', (req, res) => {
   res.sendFile('index.html', { root: '.' });
 });
 
 app.get('/api/productos', (req, res) => {
-  if(!db) return res.json({msg: "Falta configurar DB"});
   db.query('SELECT * FROM productos', (err, result) => {
-    if(err) return res.status(500).send(err);
+    if(err) {
+      console.log(err);
+      return res.status(500).json(err);
+    }
     res.json(result);
   });
 });
