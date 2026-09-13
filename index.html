@@ -2,64 +2,855 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>My Inventory - Rescate</title>
+<title>InvenTrack - Sistema de Inventario</title>
 <style>
-body{background:#1C2128;color:#E8EAED;font-family:Arial;padding:20px}
-input,button{padding:10px;margin:5px}
-.panel{background:#242A32;border:1px solid #3A414C;padding:20px;margin-top:20px}
-table{width:100%;border-collapse:collapse;margin-top:15px}
-th,td{border:1px solid #3A414C;padding:8px;text-align:left}
-.btn{background:#E8A33D;border:none;cursor:pointer;color:#000;font-weight:bold}
+  :root{
+    --bg:#1C2128;
+    --panel:#242A32;
+    --panel-2:#2B323C;
+    --border:#3A414C;
+    --text:#E8EAED;
+    --muted:#8B93A1;
+    --accent:#E8A33D;
+    --accent-dim:#5A4626;
+    --ok:#4CAF7D;
+    --danger:#E5595E;
+    --danger-dim:#4A2B2C;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);min-height:100vh;}
+  code,.mono{font-family: ui-monospace, "SF Mono", Consolas, monospace;}
+
+  /* ---------- LOGIN ---------- */
+  #login-screen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:
+      linear-gradient(180deg, rgba(232,163,61,.06), transparent 40%),
+      repeating-linear-gradient(135deg, #20262e 0 2px, #1C2128 2px 26px);
+  }
+ .login-box{
+    background:var(--panel);border:1px solid var(--border);
+    width:340px;padding:36px 32px;
+  }
+ .login-box h1{
+    font-size:22px;margin:0 0 4px;letter-spacing:.5px;
+  }
+ .login-box.tag{color:var(--accent);font-size:13px;margin-bottom:28px;display:block;font-family:ui-monospace,monospace;}
+ .field{margin-bottom:16px;}
+ .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;}
+ .field input,.field select{
+    width:100%;padding:10px 11px;background:var(--bg);border:1px solid var(--border);
+    color:var(--text);font-size:14px;
+  }
+ .field input:focus,.field select:focus{outline:none;border-color:var(--accent);}
+ .btn{
+    cursor:pointer;border:1px solid var(--accent);background:var(--accent);
+    color:#1C2128;font-weight:600;padding:10px 16px;font-size:14px;
+  }
+ .btn:hover{background:#f0af52;}
+ .btn.secondary{background:transparent;color:var(--text);border-color:var(--border);font-weight:400;}
+ .btn.secondary:hover{border-color:var(--muted);}
+ .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff;}
+ .btn.danger:hover{background:#f16368;}
+ .btn:disabled{opacity:.4;cursor:not-allowed;}
+ .error-msg{color:var(--danger);font-size:12.5px;margin-top:10px;min-height:16px;}
+ .demo-users{margin-top:22px;border-top:1px solid var(--border);padding-top:16px;font-size:11.5px;color:var(--muted);line-height:1.7;}
+
+  /* ---------- APP SHELL ---------- */
+  #app{display:none;min-height:100vh;grid-template-columns:220px 1fr;}
+  #app.active{display:grid;}
+  aside{
+    background:var(--panel);border-right:1px solid var(--border);
+    padding:22px 0;display:flex;flex-direction:column;
+  }
+ .brand{padding:0 20px 22px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+ .brand b{font-size:16px;letter-spacing:.4px;}
+ .brand.role-pill{
+    display:inline-block;margin-top:8px;font-size:11px;padding:3px 8px;
+    background:var(--accent-dim);color:var(--accent);font-family:ui-monospace,monospace;
+  }
+  nav a{
+    display:block;padding:10px 20px;color:var(--muted);text-decoration:none;font-size:14px;
+    border-left:3px solid transparent;cursor:pointer;
+  }
+  nav a:hover{color:var(--text);background:var(--panel-2);}
+  nav a.active{color:var(--text);border-left-color:var(--accent);background:var(--panel-2);}
+ .logout{margin-top:auto;padding:14px 20px 0;}
+  main{padding:28px 34px;overflow-x:auto;}
+ .topbar{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px;}
+ .topbar h2{margin:0;font-size:20px;}
+ .topbar.user-tag{color:var(--muted);font-size:13px;}
+
+ .cards{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
+ .kpi{background:var(--panel);border:1px solid var(--border);padding:16px 20px;min-width:150px;}
+ .kpi.n{font-size:24px;font-weight:700;font-family:ui-monospace,monospace;}
+ .kpi.l{font-size:12px;color:var(--muted);margin-top:4px;}
+ .kpi.alert.n{color:var(--danger);}
+
+  table{width:100%;border-collapse:collapse;background:var(--panel);font-size:13.5px;}
+  th{
+    text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);
+    color:var(--muted);font-weight:600;font-size:12px;
+  }
+  td{padding:10px 12px;border-bottom:1px solid var(--border);}
+  tr:hover td{background:var(--panel-2);}
+ .low-stock{color:var(--danger);font-weight:600;}
+ .actions button{margin-right:6px;font-size:12px;padding:5px 9px;}
+
+ .panel{background:var(--panel);border:1px solid var(--border);padding:20px;margin-bottom:20px;}
+ .panel h3{margin:0 0 16px;font-size:15px;}
+ .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+ .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+ .field-inline label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;}
+ .field-inline input,.field-inline select{
+    width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:13.5px;
+  }
+ .field-inline input:invalid{border-color:var(--danger);}
+ .inline-error{color:var(--danger);font-size:11.5px;margin-top:4px;min-height:14px;}
+ .toolbar{display:flex;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+ .toolbar input[type=text]{padding:8px 10px;background:var(--panel);border:1px solid var(--border);color:var(--text);min-width:220px;}
+ .badge{padding:2px 8px;font-size:11px;font-family:ui-monospace,monospace;}
+ .badge.entrada{background:#1e3a2c;color:var(--ok);}
+ .badge.salida{background:var(--danger-dim);color:var(--danger);}
+ .badge.ajuste{background:var(--accent-dim);color:var(--accent);}
+ .empty{color:var(--muted);font-size:13px;padding:20px;text-align:center;}
+ .locked-note{color:var(--muted);font-size:12px;margin-top:6px;}
+  ::placeholder{color:#5b6270;}
+ .toast{
+    position:fixed;bottom:20px;right:20px;background:var(--panel);border:1px solid var(--accent);
+    padding:12px 18px;font-size:13.5px;display:none;z-index:50;
+  }
 </style>
 </head>
 <body>
-<h1>My Inventory - MODO RESCATE</h1>
-<p>Si ves esto, el servidor YA funciona.</p>
+<!-- ================= LOGIN ================= -->
+<div id="login-screen">
+  <div class="login-box" id="login-box">
+    <h1>My Inventory</h1>
+    <div class="field">
+      <label>Usuario</label>
+      <input id="login-user" type="text" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input id="login-pass" type="password" autocomplete="current-password">
+    </div>
+    <button class="btn" style="width:100%" id="btn-login" onclick="doLogin()">Iniciar sesión</button>
+    <div class="error-msg" id="login-error"></div>
+    <p style="text-align:center;margin:16px 0 0;font-size:13px;">
+      <a href="#" onclick="mostrarRegistro();return false;" style="color:var(--accent);text-decoration:none;">¿No tienes cuenta? Regístrate</a>
+    </p>
+  </div>
 
-<div class="panel">
-<h3>Registro / Login (MySQL compartido)</h3>
-<input id="nombre" placeholder="Nombre completo">
-<input id="user" placeholder="Usuario">
-<input id="pass" type="password" placeholder="Contraseña">
-<button class="btn" onclick="registrar()">Crear cuenta</button>
-<button class="btn" onclick="login()">Entrar</button>
-<div id="msg"></div>
+  <div class="login-box" id="register-box" style="display:none">
+    <h1>Crear cuenta</h1>
+    <div class="field">
+      <label>Nombre completo</label>
+      <input id="reg-nombre" type="text">
+    </div>
+    <div class="field">
+      <label>Usuario</label>
+      <input id="reg-usuario" type="text" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Contraseña (mínimo 6 caracteres)</label>
+      <input id="reg-pass" type="password" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>Confirmar contraseña</label>
+      <input id="reg-pass2" type="password" autocomplete="new-password">
+    </div>
+    <button class="btn" style="width:100%" id="btn-register" onclick="doRegister()">Crear cuenta</button>
+    <div class="error-msg" id="register-error"></div>
+    <p style="text-align:center;margin:16px 0 0;font-size:13px;">
+      <a href="#" onclick="mostrarLogin();return false;" style="color:var(--accent);text-decoration:none;">¿Ya tienes cuenta? Inicia sesión</a>
+    </p>
+    <div class="demo-users" id="register-hint">
+      Si eres el primer usuario del sistema, tu cuenta será el <b>Dueño</b> y podrás ingresar de inmediato.
+      Las siguientes cuentas entran como <b>Empleado</b> y quedan pendientes hasta que un supervisor o el dueño las apruebe.
+    </div>
+  </div>
 </div>
 
-<div class="panel">
-<h3>Productos (Todos ven lo mismo)</h3>
-<input id="codigo" placeholder="Codigo P-001">
-<input id="pNombre" placeholder="Nombre producto">
-<input id="compra" type="number" placeholder="Precio compra">
-<input id="venta" type="number" placeholder="Precio venta">
-<input id="stock" type="number" placeholder="Stock">
-<input id="min" type="number" placeholder="Minimo" value="5">
-<button class="btn" onclick="crearProd()">+ Crear producto</button>
-<table><thead><tr><th>Codigo</th><th>Nombre</th><th>Stock</th><th>Accion</th></tr></thead><tbody id="tbody"></tbody></table>
+<!-- ================= APP ================= -->
+<div id="app">
+  <aside>
+    <div class="brand">
+      <b>My Inventory</b>
+      <div class="role-pill" id="role-pill"></div>
+    </div>
+    <nav id="nav-menu"></nav>
+    <div class="logout">
+      <button class="btn secondary" style="width:100%" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </aside>
+  <main>
+    <div class="topbar">
+      <h2 id="view-title">Panel</h2>
+      <span class="user-tag" id="user-tag"></span>
+    </div>
+    <div id="view-root"></div>
+  </main>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-const API='';
-function msg(t){document.getElementById('msg').textContent=t}
-async function registrar(){
-  const r=await fetch(API+'/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre_completo:document.getElementById('nombre').value,usuario:document.getElementById('user').value,contrasena:document.getElementById('pass').value})});
-  const d=await r.json(); msg(r.ok? 'Creado rol:'+d.rol_id : d.message);
+/* =========================================================================
+   INVENTRACK — lógica de la aplicación
+   AHORA BASE COMPARTIDA MYSQL - Conserva tu estructura original
+   ========================================================================= */
+
+const ROLES = {
+  empleado: { label: "Empleado", nivel: 1 },
+  supervisor: { label: "Supervisor", nivel: 2 },
+  dueño: { label: "Dueño", nivel: 3 }
+};
+
+let state = {
+  session: null,
+  usuarios: [],
+  categorias: [{id:1, nombre:"General"}],
+  productos: [],
+  movimientos: JSON.parse(localStorage.getItem('inv_movimientos')||'[]'),
+  view: "dashboard"
+};
+
+const API = '';
+
+// ---------- capa de almacenamiento COMPARTIDA (MySQL) ----------
+async function apiGet(path){
+  try{
+    const r = await fetch(API+path);
+    if(!r.ok) return [];
+    return await r.json();
+  }catch(e){ console.log('API error',e); return []; }
 }
-async function login(){
-  const r=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario:document.getElementById('user').value,contrasena:document.getElementById('pass').value})});
-  const d=await r.json(); msg(r.ok? 'Hola '+d.nombre_completo+' rol_id:'+d.rol_id : d.message);
-  if(r.ok) cargar();
+async function apiPost(path, body){
+  const r = await fetch(API+path, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data = await r.json().catch(()=>({}));
+  if(!r.ok) throw data;
+  return data;
 }
-async function cargar(){
-  const r=await fetch(API+'/api/productos'); const prods=await r.json();
-  document.getElementById('tbody').innerHTML=prods.map(p=>`<tr><td>${p.codigo}</td><td>${p.nombre}</td><td>${p.stock}</td><td><button onclick="borrar(${p.id})">X</button></td></tr>`).join('');
+async function apiPut(path, body){
+  const r = await fetch(API+path, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  const data = await r.json().catch(()=>({}));
+  if(!r.ok) throw data;
+  return data;
 }
-async function crearProd(){
-  await fetch(API+'/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo:document.getElementById('codigo').value,nombre:document.getElementById('pNombre').value,precio_compra:document.getElementById('compra').value,precio_venta:document.getElementById('venta').value,stock:document.getElementById('stock').value,stock_minimo:document.getElementById('min').value,categoria_id:1})});
-  cargar();
+async function apiDelete(path){
+  const r = await fetch(API+path, {method:'DELETE'});
+  if(!r.ok) throw new Error('Error API');
+  return r.json().catch(()=>({}));
 }
-async function borrar(id){ await fetch(API+'/api/productos/'+id,{method:'DELETE'}); cargar(); }
-cargar();
+
+async function loadAll(){
+  // Productos y usuarios vienen de MySQL compartido
+  state.productos = await apiGet('/api/productos');
+  state.usuarios = await apiGet('/api/usuarios');
+  // categorias fijas, movimientos en localStorage por ahora
+}
+
+async function getJSON(key, fallback){
+  if(key==='productos') return await apiGet('/api/productos');
+  if(key==='usuarios') return await apiGet('/api/usuarios');
+  if(key==='categorias') return [{id:1,nombre:"General"}];
+  if(key==='movimientos') return JSON.parse(localStorage.getItem('inv_movimientos')||'[]');
+  return fallback;
+}
+async function saveKey(key, value){
+  if(key==='movimientos'){
+    localStorage.setItem('inv_movimientos', JSON.stringify(value));
+  }
+  // productos y usuarios se guardan via apiPost/apiPut, no aquí
+}
+
+function seedUsuarios(){ return []; }
+function seedCategorias(){ return [{id:1, nombre:"General"}]; }
+function seedProductos(){ return []; }
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=> t.style.display='none', 2600);
+}
+
+// ---------- validación central (números vs texto, stock negativo) ----------
+function esEnteroValido(v){ return /^[0-9]+$/.test(String(v).trim()); }
+function esPrecioValido(v){ return /^[0-9]+(\.[0-9]{1,2})?$/.test(String(v).trim()); }
+function bloquearNoNumericos(e){
+  const permitido = ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Home","End"];
+  if(permitido.includes(e.key)) return;
+  const esPunto = e.key === "." && e.target.dataset.decimal === "1" &&!e.target.value.includes(".");
+  if(!/^[0-9]$/.test(e.key) &&!esPunto){ e.preventDefault(); }
+}
+
+// ---------- login / registro ----------
+function mostrarRegistro(){
+  document.getElementById('login-box').style.display = 'none';
+  document.getElementById('register-box').style.display = 'block';
+}
+function mostrarLogin(){
+  document.getElementById('register-box').style.display = 'none';
+  document.getElementById('login-box').style.display = 'block';
+}
+
+async function doLogin(){
+  const btn = document.getElementById('btn-login');
+  const err = document.getElementById('login-error');
+  err.style.color = 'var(--danger)';
+  err.textContent = "";
+  btn.disabled = true;
+  try{
+    const u = document.getElementById('login-user').value.trim();
+    const p = document.getElementById('login-pass').value;
+    if(!u ||!p){ err.textContent = "Escribe usuario y contraseña."; return; }
+    const user = await apiPost('/api/login', {usuario:u, contrasena:p});
+    // Compatibilidad con tu lógica original
+    const mapped = {
+      id: user.id,
+      nombre: user.nombre_completo,
+      usuario: user.usuario,
+      password: user.password_hash,
+      rol: user.rol_id==1?'dueño':'empleado',
+      rol_id: user.rol_id,
+      activo: user.activo==1,
+      pendiente: user.pendiente==1
+    };
+    state.session = mapped;
+    localStorage.setItem('session', JSON.stringify(mapped));
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').classList.add('active');
+    await loadAll();
+    renderShell();
+    goTo('dashboard');
+  }catch(e){
+    err.textContent = e.message || "Usuario o contraseña incorrectos.";
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function doRegister(){
+  const btn = document.getElementById('btn-register');
+  const err = document.getElementById('register-error');
+  err.style.color = 'var(--danger)';
+  err.textContent = "";
+  btn.disabled = true;
+  try{
+    const nombre = document.getElementById('reg-nombre').value.trim();
+    const usuario = document.getElementById('reg-usuario').value.trim();
+    const pass = document.getElementById('reg-pass').value;
+    const pass2 = document.getElementById('reg-pass2').value;
+
+    if(!nombre ||!usuario ||!pass ||!pass2){ err.textContent = "Completa todos los campos."; return; }
+    if(pass.length < 6){ err.textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
+    if(pass!== pass2){ err.textContent = "Las contraseñas no coinciden."; return; }
+
+    const data = await apiPost('/api/register', {nombre_completo:nombre, usuario, contrasena:pass});
+
+    document.getElementById('reg-nombre').value = '';
+    document.getElementById('reg-usuario').value = '';
+    document.getElementById('reg-pass').value = '';
+    document.getElementById('reg-pass2').value = '';
+    mostrarLogin();
+    const le = document.getElementById('login-error');
+    le.style.color = 'var(--ok)';
+    le.textContent = data.rol_id==1
+     ? "Cuenta creada como Dueño. Ya puedes iniciar sesión."
+      : "Cuenta creada. Un dueño debe aprobarla.";
+  }catch(e){
+    err.textContent = e.message || "Ese nombre de usuario ya existe.";
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function doLogout(){
+  state.session = null;
+  localStorage.removeItem('session');
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('login-screen').style.display = 'flex';
+  mostrarLogin();
+  document.getElementById('login-user').value = "";
+  document.getElementById('login-pass').value = "";
+}
+
+// ---------- permisos ----------
+function puede(accion){
+  const rol = state.session.rol;
+  const tabla = {
+    ver_costos: ["supervisor","dueño"],
+    crear_producto: ["supervisor","dueño"],
+    editar_producto: ["supervisor","dueño"],
+    eliminar_producto: ["dueño"],
+    registrar_movimiento: ["empleado","supervisor","dueño"],
+    ajustar_stock_manual: ["supervisor","dueño"],
+    ver_reportes: ["supervisor","dueño"],
+    gestionar_usuarios: ["dueño"],
+    gestionar_categorias: ["supervisor","dueño"],
+    aprobar_registros: ["supervisor","dueño"],
+  };
+  return (tabla[accion] || []).includes(rol);
+}
+
+// ---------- shell / navegación ----------
+function renderShell(){
+  document.getElementById('role-pill').textContent = ROLES[state.session.rol].label;
+  document.getElementById('user-tag').textContent = state.session.nombre + " · " + state.session.usuario;
+  const items = [
+    {id:"dashboard", label:"Panel"},
+    {id:"productos", label:"Productos"},
+    {id:"movimientos", label:"Movimientos"},
+  ];
+  if(puede('ver_reportes')) items.push({id:"reportes", label:"Reportes"});
+  if(puede('gestionar_categorias')) items.push({id:"categorias", label:"Categorías"});
+  if(puede('aprobar_registros')){
+    const pendientes = state.usuarios.filter(u=>u.pendiente==1||u.pendiente==true).length;
+    items.push({id:"solicitudes", label:"Solicitudes" + (pendientes? ` (${pendientes})` : "")});
+  }
+  if(puede('gestionar_usuarios')) items.push({id:"usuarios", label:"Usuarios"});
+
+  const nav = document.getElementById('nav-menu');
+  nav.innerHTML = "";
+  items.forEach(it=>{
+    const a = document.createElement('a');
+    a.textContent = it.label;
+    a.dataset.id = it.id;
+    a.onclick = ()=> goTo(it.id);
+    nav.appendChild(a);
+  });
+  marcarNavActiva();
+}
+function marcarNavActiva(){
+  document.querySelectorAll('#nav-menu a').forEach(a=>{
+    a.classList.toggle('active', a.dataset.id === state.view);
+  });
+}
+const TITULOS = {
+  dashboard:"Panel", productos:"Productos", movimientos:"Movimientos de inventario",
+  reportes:"Reportes", categorias:"Categorías", usuarios:"Usuarios", solicitudes:"Solicitudes de registro"
+};
+function goTo(view){
+  state.view = view;
+  document.getElementById('view-title').textContent = TITULOS[view];
+  marcarNavActiva();
+  const renderers = {
+    dashboard: renderDashboard, productos: renderProductos, movimientos: renderMovimientos,
+    reportes: renderReportes, categorias: renderCategorias, usuarios: renderUsuarios,
+    solicitudes: renderSolicitudes
+  };
+  renderers[view]();
+}
+
+// ---------- DASHBOARD ----------
+function renderDashboard(){
+  const root = document.getElementById('view-root');
+  const totalSKUs = state.productos.length;
+  const bajos = state.productos.filter(p => Number(p.stock) <= Number(p.stock_minimo));
+  const totalUnidades = state.productos.reduce((a,p)=>a+Number(p.stock),0);
+  let valorInventario = null;
+  if(puede('ver_costos')){
+    valorInventario = state.productos.reduce((a,p)=> a + Number(p.stock) * Number(p.precio_compra), 0);
+  }
+  const pendientesReg = puede('aprobar_registros')? state.usuarios.filter(u=>u.pendiente==1||u.pendiente==true).length : 0;
+  root.innerHTML = `
+    <div class="cards">
+      <div class="kpi"><div class="n">${totalSKUs}</div><div class="l">Productos activos (compartidos)</div></div>
+      <div class="kpi"><div class="n">${totalUnidades}</div><div class="l">Unidades en stock</div></div>
+      <div class="kpi ${bajos.length? 'alert':''}"><div class="n">${bajos.length}</div><div class="l">Alertas de stock bajo</div></div>
+      ${valorInventario!==null? `<div class="kpi"><div class="n">$${valorInventario.toLocaleString('es-CO')}</div><div class="l">Valor de inventario (costo)</div></div>` : ''}
+      ${puede('aprobar_registros')? `<div class="kpi ${pendientesReg?'alert':''}"><div class="n">${pendientesReg}</div><div class="l">Registros por aprobar</div></div>` : ''}
+    </div>
+    <div class="panel">
+      <h3>Productos con stock en o bajo el mínimo</h3>
+      ${bajos.length? tablaProductosSimple(bajos) : '<div class="empty">No hay alertas de stock en este momento.</div>'}
+    </div>
+    <div class="panel">
+      <h3>Últimos movimientos</h3>
+      ${tablaMovimientos(state.movimientos.slice(-6).reverse())}
+    </div>
+  `;
+}
+function tablaProductosSimple(lista){
+  return `<table><thead><tr><th>Código</th><th>Producto</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>
+    ${lista.map(p=>`<tr><td class="mono">${p.codigo}</td><td>${p.nombre}</td>
+      <td class="${p.stock<=p.stock_minimo?'low-stock':''}">${p.stock}</td><td>${p.stock_minimo}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+// ---------- PRODUCTOS ----------
+function renderProductos(){
+  const root = document.getElementById('view-root');
+  const puedeCrear = puede('crear_producto');
+  root.innerHTML = `
+    <div class="toolbar">
+      <input type="text" id="buscar-prod" placeholder="Buscar por nombre o código..." oninput="filtrarProductos()">
+      ${puedeCrear? '<button class="btn" onclick="abrirFormProducto()">+ Nuevo producto</button>' : ''}
+    </div>
+    <div id="form-producto-slot"></div>
+    <table>
+      <thead><tr>
+        <th>Código</th><th>Producto</th><th>Categoría</th>
+        ${puede('ver_costos')? '<th>Precio compra</th>' : ''}
+        <th>Precio venta</th><th>Stock</th><th>Mínimo</th><th>Acciones</th>
+      </tr></thead>
+      <tbody id="tbody-productos"></tbody>
+    </table>
+  `;
+  pintarFilasProductos(state.productos);
+}
+function filtrarProductos(){
+  const q = document.getElementById('buscar-prod').value.toLowerCase();
+  pintarFilasProductos(state.productos.filter(p =>
+    p.nombre.toLowerCase().includes(q) || p.codigo.toLowerCase().includes(q)));
+}
+function pintarFilasProductos(lista){
+  const tbody = document.getElementById('tbody-productos');
+  if(!lista.length){ tbody.innerHTML = `<tr><td colspan="8" class="empty">Sin resultados - Crea uno y todos lo verán</td></tr>`; return; }
+  tbody.innerHTML = lista.map(p=>{
+    const cat = state.categorias.find(c=>c.id==p.categoria_id);
+    return `<tr>
+      <td class="mono">${p.codigo}</td>
+      <td>${p.nombre}</td>
+      <td>${cat? cat.nombre : '—'}</td>
+      ${puede('ver_costos')? `<td>$${Number(p.precio_compra).toLocaleString('es-CO')}</td>` : ''}
+      <td>$${Number(p.precio_venta).toLocaleString('es-CO')}</td>
+      <td class="${p.stock<=p.stock_minimo?'low-stock':''}">${p.stock}</td>
+      <td>${p.stock_minimo}</td>
+      <td class="actions">
+        ${puede('editar_producto')? `<button class="btn secondary" onclick="abrirFormProducto(${p.id})">Editar</button>` : ''}
+        ${puede('eliminar_producto')? `<button class="btn danger" onclick="eliminarProducto(${p.id})">Eliminar</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirFormProducto(id){
+  const editando = id!== undefined;
+  const p = editando? state.productos.find(x=>x.id==id) : null;
+  const slot = document.getElementById('form-producto-slot');
+  slot.innerHTML = `
+    <div class="panel">
+      <h3>${editando? 'Editar producto' : 'Nuevo producto'} - Guardado en MySQL compartido</h3>
+      <div class="grid3">
+        <div class="field-inline"><label>Código</label>
+          <input id="f-codigo" type="text" value="${p?p.codigo:''}" placeholder="P-0004"></div>
+        <div class="field-inline"><label>Nombre</label>
+          <input id="f-nombre" type="text" value="${p?p.nombre:''}"></div>
+        <div class="field-inline"><label>Categoría</label>
+          <select id="f-categoria">${state.categorias.map(c=>`<option value="${c.id}" ${p&&p.categoria_id==c.id?'selected':''}>${c.nombre}</option>`).join('')}</select></div>
+      </div>
+      <div class="grid3" style="margin-top:14px">
+        <div class="field-inline"><label>Precio de compra (solo números)</label>
+          <input id="f-compra" type="text" inputmode="decimal" data-decimal="1" value="${p?p.precio_compra:''}"
+            onkeydown="bloquearNoNumericos(event)">
+          <div class="inline-error" id="err-compra"></div></div>
+        <div class="field-inline"><label>Precio de venta (solo números)</label>
+          <input id="f-venta" type="text" inputmode="decimal" data-decimal="1" value="${p?p.precio_venta:''}"
+            onkeydown="bloquearNoNumericos(event)">
+          <div class="inline-error" id="err-venta"></div></div>
+        <div class="field-inline"><label>Stock mínimo (entero, sin negativos)</label>
+          <input id="f-minimo" type="text" inputmode="numeric" value="${p?p.stock_minimo:''}"
+            onkeydown="bloquearNoNumericos(event)">
+          <div class="inline-error" id="err-minimo"></div></div>
+      </div>
+      ${!editando? `
+      <div class="grid3" style="margin-top:14px">
+        <div class="field-inline"><label>Stock inicial (entero, sin negativos)</label>
+          <input id="f-stock" type="text" inputmode="numeric" value="0" onkeydown="bloquearNoNumericos(event)">
+          <div class="inline-error" id="err-stock"></div></div>
+      </div>` : `<div class="locked-note">El stock actual (${p.stock}) solo se cambia desde "Movimientos".</div>`}
+      <div style="margin-top:16px;display:flex;gap:10px">
+        <button class="btn" onclick="guardarProducto(${editando?p.id:'null'})">Guardar en MySQL</button>
+        <button class="btn secondary" onclick="document.getElementById('form-producto-slot').innerHTML=''">Cancelar</button>
+      </div>
+    </div>
+  `;
+}
+
+async function guardarProducto(id){
+  const codigo = document.getElementById('f-codigo').value.trim();
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const categoria_id = parseInt(document.getElementById('f-categoria').value);
+  const compra = document.getElementById('f-compra').value.trim();
+  const venta = document.getElementById('f-venta').value.trim();
+  const minimo = document.getElementById('f-minimo').value.trim();
+  const stockInicial = document.getElementById('f-stock')? document.getElementById('f-stock').value.trim() : null;
+
+  let ok = true;
+  ['err-compra','err-venta','err-minimo','err-stock'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent=''; });
+  if(!codigo ||!nombre){ toast('Código y nombre son obligatorios.'); return; }
+  if(!esPrecioValido(compra)){ document.getElementById('err-compra').textContent='Ingresa solo números.'; ok=false; }
+  if(!esPrecioValido(venta)){ document.getElementById('err-venta').textContent='Ingresa solo números.'; ok=false; }
+  if(!esEnteroValido(minimo)){ document.getElementById('err-minimo').textContent='Entero sin negativos.'; ok=false; }
+  if(stockInicial!==null &&!esEnteroValido(stockInicial)){ document.getElementById('err-stock').textContent='Entero sin negativos.'; ok=false; }
+  if(!ok) return;
+
+  try{
+    if(id){
+      await apiPut('/api/productos/'+id, {codigo,nombre,categoria_id,precio_compra:parseFloat(compra),precio_venta:parseFloat(venta),stock_minimo:parseInt(minimo)});
+    }else{
+      await apiPost('/api/productos', {codigo,nombre,categoria_id,precio_compra:parseFloat(compra),precio_venta:parseFloat(venta),stock:parseInt(stockInicial),stock_minimo:parseInt(minimo)});
+    }
+    await loadAll();
+    document.getElementById('form-producto-slot').innerHTML = '';
+    renderProductos();
+    toast('Producto guardado en base compartida.');
+  }catch(e){
+    toast('Error: '+(e.message||'Ya existe ese código'));
+  }
+}
+
+async function eliminarProducto(id){
+  if(!confirm('¿Eliminar este producto? Todos dejarán de verlo.')) return;
+  await apiDelete('/api/productos/'+id);
+  await loadAll();
+  renderProductos();
+  toast('Producto eliminado de MySQL compartido.');
+}
+
+// ---------- MOVIMIENTOS ----------
+function renderMovimientos(){
+  const root = document.getElementById('view-root');
+  root.innerHTML = `
+    <div class="panel">
+      <h3>Registrar movimiento - Actualiza stock compartido</h3>
+      <div class="grid3">
+        <div class="field-inline"><label>Producto</label>
+          <select id="m-producto">${state.productos.map(p=>`<option value="${p.id}">${p.codigo} — ${p.nombre} (stock: ${p.stock})</option>`).join('')}</select></div>
+        <div class="field-inline"><label>Tipo de movimiento</label>
+          <select id="m-tipo">
+            <option value="entrada">Entrada (compra / reposición)</option>
+            <option value="salida">Salida (venta / consumo)</option>
+            ${puede('ajustar_stock_manual')? '<option value="ajuste">Ajuste manual de inventario</option>' : ''}
+          </select></div>
+        <div class="field-inline"><label>Cantidad (entero positivo)</label>
+          <input id="m-cantidad" type="text" inputmode="numeric" onkeydown="bloquearNoNumericos(event)">
+          <div class="inline-error" id="err-cantidad"></div></div>
+      </div>
+      <div class="field-inline" style="margin-top:14px"><label>Motivo / observación</label>
+        <input id="m-motivo" type="text" placeholder="Ej: compra a proveedor..."></div>
+      <div style="margin-top:16px">
+        <button class="btn" onclick="registrarMovimiento()">Registrar en MySQL</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Historial de movimientos</h3>
+      ${tablaMovimientos([...state.movimientos].reverse())}
+    </div>
+  `;
+}
+function tablaMovimientos(lista){
+  if(!lista.length) return '<div class="empty">Aún no hay movimientos registrados.</div>';
+  return `<table><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cant.</th><th>Stock resultante</th><th>Usuario</th><th>Motivo</th></tr></thead><tbody>
+    ${lista.map(m=>{
+      const p = state.productos.find(x=>x.id==m.producto_id);
+      return `<tr>
+        <td class="mono">${new Date(m.fecha).toLocaleString('es-CO')}</td>
+        <td>${p? p.nombre : '(producto eliminado)'}</td>
+        <td><span class="badge ${m.tipo}">${m.tipo}</span></td>
+        <td>${m.cantidad}</td>
+        <td>${m.stock_nuevo}</td>
+        <td>${m.usuario}</td>
+        <td>${m.motivo || '—'}</td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+async function registrarMovimiento(){
+  const productoId = parseInt(document.getElementById('m-producto').value);
+  const tipo = document.getElementById('m-tipo').value;
+  const cantidadRaw = document.getElementById('m-cantidad').value.trim();
+  const motivo = document.getElementById('m-motivo').value.trim();
+  document.getElementById('err-cantidad').textContent = '';
+
+  if(!esEnteroValido(cantidadRaw) || parseInt(cantidadRaw) <= 0){
+    document.getElementById('err-cantidad').textContent = 'Ingresa un número entero mayor que cero.';
+    return;
+  }
+  const cantidad = parseInt(cantidadRaw);
+  const producto = state.productos.find(p=>p.id==productoId);
+  if(!producto){ toast('Selecciona un producto válido.'); return; }
+
+  let nuevoStock = Number(producto.stock);
+  if(tipo === 'entrada') nuevoStock += cantidad;
+  else if(tipo === 'salida') nuevoStock -= cantidad;
+  else if(tipo === 'ajuste') nuevoStock = cantidad;
+
+  if(nuevoStock < 0){
+    toast(`No se puede completar: el stock quedaría en ${nuevoStock}.`);
+    return;
+  }
+
+  const stockAnterior = producto.stock;
+  await apiPut('/api/productos/'+productoId+'/stock', {stock: nuevoStock});
+
+  state.movimientos.push({
+    id: Date.now(), producto_id: productoId, tipo, cantidad,
+    stock_anterior: stockAnterior, stock_nuevo: nuevoStock,
+    usuario: state.session.usuario, motivo, fecha: new Date().toISOString()
+  });
+  localStorage.setItem('inv_movimientos', JSON.stringify(state.movimientos));
+  await loadAll();
+  renderMovimientos();
+  toast('Movimiento registrado - Stock compartido actualizado.');
+}
+
+// ---------- REPORTES ----------
+function renderReportes(){
+  const root = document.getElementById('view-root');
+  const valorCosto = state.productos.reduce((a,p)=>a + Number(p.stock)*Number(p.precio_compra), 0);
+  const valorVenta = state.productos.reduce((a,p)=>a + Number(p.stock)*Number(p.precio_venta), 0);
+  const gananciaPotencial = valorVenta - valorCosto;
+  const movsPorTipo = {entrada:0, salida:0, ajuste:0};
+  state.movimientos.forEach(m => {
+    if(m.tipo === 'ajuste'){ movsPorTipo.ajuste += Math.abs(m.stock_nuevo - m.stock_anterior); }
+    else{ movsPorTipo[m.tipo] = (movsPorTipo[m.tipo]||0) + m.cantidad; }
+  });
+
+  root.innerHTML = `
+    <div class="cards">
+      <div class="kpi"><div class="n">$${valorCosto.toLocaleString('es-CO')}</div><div class="l">Valor inventario (costo)</div></div>
+      <div class="kpi"><div class="n">$${valorVenta.toLocaleString('es-CO')}</div><div class="l">Valor inventario (venta)</div></div>
+      <div class="kpi"><div class="n">$${gananciaPotencial.toLocaleString('es-CO')}</div><div class="l">Ganancia potencial</div></div>
+    </div>
+    <div class="panel">
+      <h3>Movimientos acumulados</h3>
+      <div class="grid3">
+        <div class="kpi"><div class="n">${movsPorTipo.entrada}</div><div class="l">Unidades ingresadas</div></div>
+        <div class="kpi"><div class="n">${movsPorTipo.salida}</div><div class="l">Unidades de salida</div></div>
+        <div class="kpi"><div class="n">${movsPorTipo.ajuste}</div><div class="l">Unidades corregidas por ajustes</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Valorización por producto (base compartida)</h3>
+      <table><thead><tr><th>Producto</th><th>Stock</th><th>Costo total</th><th>Venta total</th></tr></thead><tbody>
+      ${state.productos.map(p=>`<tr><td>${p.nombre}</td><td>${p.stock}</td>
+        <td>$${(p.stock*p.precio_compra).toLocaleString('es-CO')}</td>
+        <td>$${(p.stock*p.precio_venta).toLocaleString('es-CO')}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+  `;
+}
+
+// ---------- CATEGORÍAS ----------
+function renderCategorias(){
+  const root = document.getElementById('view-root');
+  root.innerHTML = `
+    <div class="panel">
+      <h3>Categoría</h3>
+      <p class="locked-note">Por ahora solo "General" (compartido). Si quieres más categorías en MySQL, avísame.</p>
+    </div>
+    <table><thead><tr><th>Nombre</th><th># Productos</th></tr></thead><tbody>
+    ${state.categorias.map(c=>`<tr><td>${c.nombre}</td><td>${state.productos.filter(p=>p.categoria_id==c.id).length}</td></tr>`).join('')}
+    </tbody></table>
+  `;
+}
+async function crearCategoria(){ toast('Categorías ahora son fijas en MySQL.'); }
+
+// ---------- SOLICITUDES DE REGISTRO ----------
+function renderSolicitudes(){
+  const root = document.getElementById('view-root');
+  const pendientes = state.usuarios.filter(u => u.pendiente==1||u.pendiente==true);
+  if(!pendientes.length){
+    root.innerHTML = '<div class="panel"><div class="empty">No hay solicitudes pendientes.</div></div>';
+    return;
+  }
+  const esDueño = state.session.rol === 'dueño';
+  root.innerHTML = `
+    <div class="panel">
+      <h3>Cuentas nuevas esperando aprobación (MySQL)</h3>
+      <table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol a asignar</th><th>Acciones</th></tr></thead><tbody>
+        ${pendientes.map(u=>`<tr>
+          <td>${u.nombre_completo||u.nombre}</td>
+          <td class="mono">${u.usuario}</td>
+          <td><select id="rol-${u.id}">
+            <option value="empleado" selected>Empleado</option>
+            <option value="supervisor" ${esDueño?'':'disabled'}>Supervisor</option>
+            <option value="dueño" ${esDueño?'':'disabled'}>Dueño</option>
+          </select></td>
+          <td class="actions">
+            <button class="btn" onclick="aprobarUsuario(${u.id})">Aprobar</button>
+            <button class="btn danger" onclick="rechazarUsuario(${u.id})">Rechazar</button>
+          </td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>
+  `;
+}
+
+async function aprobarUsuario(id){
+  const rolElegido = document.getElementById('rol-'+id).value;
+  const rol_id = rolElegido=='dueño'?1:2;
+  await apiPut('/api/usuarios/'+id+'/aprobar', {rol_id});
+  await loadAll();
+  renderShell();
+  renderSolicitudes();
+  toast('Cuenta aprobada en MySQL');
+}
+
+async function rechazarUsuario(id){
+  if(!confirm('¿Rechazar y eliminar esta solicitud?')) return;
+  await apiDelete('/api/usuarios/'+id);
+  await loadAll();
+  renderShell();
+  renderSolicitudes();
+  toast('Solicitud rechazada.');
+}
+
+// ---------- USUARIOS ----------
+function renderUsuarios(){
+  const root = document.getElementById('view-root');
+  root.innerHTML = `
+    <table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th></tr></thead><tbody>
+    ${state.usuarios.map(u=>`<tr>
+      <td>${u.nombre_completo||u.nombre}</td><td class="mono">${u.usuario}</td><td>${u.rol_id==1?'Dueño':'Empleado'}</td>
+      <td>${u.pendiente==1? 'Pendiente' : 'Activo'}</td>
+    </tr>`).join('')}
+    </tbody></table>
+  `;
+}
+
+async function restablecerSistema(){ toast('Restablecer deshabilitado en modo MySQL compartido.'); }
+async function crearUsuario(){ toast('Crea usuarios desde Registro.'); }
+async function toggleUsuario(id){ toast('Usa Solicitudes para aprobar.'); }
+
+// enter para iniciar sesión
+document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('reg-pass2') && document.getElementById('reg-pass2').addEventListener('keydown', e=>{ if(e.key==='Enter') doRegister(); });
+
+window.addEventListener('error', function(e){
+  console.error('Error:', e.error || e.message);
+  const visibleErr = document.getElementById('login-screen').style.display!== 'none'
+   ? (document.getElementById('register-box').style.display!== 'none'? 'register-error' : 'login-error')
+    : null;
+  if(visibleErr){
+    const el = document.getElementById(visibleErr);
+    el.style.color = 'var(--danger)';
+    el.textContent = 'Error: ' + (e.message || 'revisa consola');
+  }
+});
+
+// Auto-login si hay sesión guardada
+(async()=>{
+  const sess = localStorage.getItem('session');
+  if(sess){
+    try{
+      const s = JSON.parse(sess);
+      state.session = s;
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app').classList.add('active');
+      await loadAll();
+      renderShell();
+      goTo('dashboard');
+    }catch(e){ console.log(e); }
+  }
+})();
 </script>
 </body>
 </html>
