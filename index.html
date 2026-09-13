@@ -128,7 +128,6 @@
 <div id="login-screen">
   <div class="login-box" id="login-box">
     <h1>My Inventory</h1>
-
     <div class="field">
       <label>Usuario</label>
       <input id="login-user" type="text" autocomplete="username">
@@ -137,7 +136,7 @@
       <label>Contraseña</label>
       <input id="login-pass" type="password" autocomplete="current-password">
     </div>
-    <button class="btn" style="width:100%" id="btn-login" onclick="doLogin()"></button>
+    <button class="btn" style="width:100%" id="btn-login" onclick="doLogin()">Iniciar sesión</button>
     <div class="error-msg" id="login-error"></div>
     <p style="text-align:center;margin:16px 0 0;font-size:13px;">
       <a href="#" onclick="mostrarRegistro();return false;" style="color:var(--accent);text-decoration:none;">¿No tienes cuenta? Regístrate</a>
@@ -146,7 +145,6 @@
 
   <div class="login-box" id="register-box" style="display:none">
     <h1>Crear cuenta</h1>
-
     <div class="field">
       <label>Nombre completo</label>
       <input id="reg-nombre" type="text">
@@ -161,19 +159,9 @@
     </div>
     <div class="field">
       <label>Confirmar contraseña</label>
-      <input id="reg-pass2" type="password" autocomplete="new-password">
-    </div>
-    <button class="btn" style="width:100%" id="btn-register" onclick="doRegister()">Crear cuenta</button>
-    <div class="error-msg" id="register-error"></div>
-    <p style="text-align:center;margin:16px 0 0;font-size:13px;">
-      <a href="#" onclick="mostrarLogin();return false;" style="color:var(--accent);text-decoration:none;">¿Ya tienes cuenta? Inicia sesión</a>
-    </p>
-    <div class="demo-users" id="register-hint">
-      Si eres el primer usuario del sistema, tu cuenta será el <b>Dueño</b> y podrás ingresar de inmediato.
-      Las siguientes cuentas entran como <b>Empleado</b> y quedan pendientes hasta que un supervisor o el dueño las apruebe.
-    </div>
-  </div>
-</div>
+      <input id="reg-pass2" type
+      <div>
+</div>       
 
 <!-- ================= APP ================= -->
 <div id="app">
