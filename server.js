@@ -15,74 +15,64 @@ const db = mysql.createPool({
   port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0
+  queueLimit: 0
 });
 
-// Comprobar conexión al arrancar
-db.query('SELECT 1', (err) => {
-  if(err) console.log('Error DB:', err);
-  else console.log('DB Conectada a', process.env.DB_NAME);
-});
+app.get('/', (req, res) => res.sendFile('index.html', { root: '.' }));
 
-app.get('/', (req, res) => {
-  res.sendFile('index.html', { root: '.' });
-});
-
-// --- PRODUCTOS ---
 app.get('/api/productos', (req, res) => {
-  db.query('SELECT * FROM productos', (err, result) => {
+  db.query('SELECT * FROM productos', (err, r) => {
     if(err) return res.status(500).json(err);
-    res.json(result);
+    res.json(r);
   });
 });
 
-// --- REGISTRO ---
+// REGISTRO COMPATIBLE CON TU TABLA
 app.post('/api/register', (req, res) => {
   const { nombre_completo, usuario, contrasena } = req.body;
 
-  // Ver si ya existe
-  db.query('SELECT * FROM usuarios WHERE usuario =?', [usuario], (err, result) => {
-    if(err) return res.status(500).json({message: 'Error DB'});
-    if(result.length > 0) return res.status(400).json({message: 'Ese nombre de usuario ya existe.'});
+  db.query('SELECT * FROM usuarios WHERE usuario =?', [usuario], (err, existe) => {
+    if(err) return res.status(500).json({message:'Error DB'});
+    if(existe.length > 0) return res.status(400).json({message:'Ese nombre de usuario ya existe.'});
 
-    // Ver si es el primero (sera Dueño)
-    db.query('SELECT COUNT(*) as total FROM usuarios', (err2, countResult) => {
-      const esPrimero = countResult[0].total === 0;
-      const rol = esPrimero? 'Dueño' : 'Empleado';
-      const estado = esPrimero? 'aprobado' : 'pendiente';
+    db.query('SELECT COUNT(*) as total FROM usuarios', (err2, totalRes) => {
+      const esPrimero = totalRes[0].total === 0;
+      const rol_id = esPrimero? 1 : 2; // 1=Dueño, 2=Empleado
+      const activo = esPrimero? 1 : 0;
+      const pendiente = esPrimero? 0 : 1;
 
-      db.query('INSERT INTO usuarios (nombre_completo, usuario, contrasena, rol, estado) VALUES (?,?,?,?,?)',
-      [nombre_completo, usuario, contrasena, rol, estado], (err3) => {
-        if(err3) return res.status(500).json({message: 'Error al crear'});
-        res.json({message: 'Cuenta creada', rol, estado});
+      db.query('INSERT INTO usuarios (nombre_completo, usuario, password_hash, rol_id, activo, pendiente) VALUES (?,?,?,?,?,?)',
+      [nombre_completo, usuario, contrasena, rol_id, activo, pendiente], (err3) => {
+        if(err3) {
+          console.log(err3);
+          return res.status(500).json({message:'Error al crear usuario'});
+        }
+        res.json({message:'Creado', rol_id, activo});
       });
     });
   });
 });
 
-// --- LOGIN ---
+// LOGIN COMPATIBLE
 app.post('/api/login', (req, res) => {
   const { usuario, contrasena } = req.body;
-  db.query('SELECT * FROM usuarios WHERE usuario =? AND contrasena =?', [usuario, contrasena], (err, result) => {
-    if(err) return res.status(500).json({message: 'Error DB'});
-    if(result.length === 0) return res.status(400).json({message: 'Usuario o contraseña incorrectos'});
+  db.query('SELECT * FROM usuarios WHERE usuario =? AND password_hash =?', [usuario, contrasena], (err, result) => {
+    if(err) return res.status(500).json({message:'Error DB'});
+    if(result.length === 0) return res.status(400).json({message:'Usuario o contraseña incorrectos'});
 
     const user = result[0];
-    if(user.estado!== 'aprobado') return res.status(403).json({message: 'Cuenta pendiente de aprobación por el dueño'});
+    if(user.pendiente == 1) return res.status(403).json({message:'Cuenta pendiente de aprobación'});
 
     res.json(user);
   });
 });
 
-// --- LISTAR USUARIOS PARA DUEÑO ---
 app.get('/api/usuarios', (req, res) => {
-  db.query('SELECT id, nombre_completo, usuario, rol, estado FROM usuarios', (err, result) => {
+  db.query('SELECT * FROM usuarios', (err, r) => {
     if(err) return res.status(500).json(err);
-    res.json(result);
+    res.json(r);
   });
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log('Servidor corriendo en ' + PORT));
+app.listen(PORT, () => console.log('Servidor corriendo ' + PORT));
