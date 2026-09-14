@@ -406,16 +406,17 @@ function doLogout(){
 function puede(accion){
   const rol = state.session.rol;
   const tabla = {
-    ver_costos: ["supervisor","dueño"],
-    crear_producto: ["supervisor","dueño"],
-    editar_producto: ["supervisor","dueño"],
-    eliminar_producto: ["dueño"],
-    registrar_movimiento: ["empleado","supervisor","dueño"],
-    ajustar_stock_manual: ["supervisor","dueño"],
-    ver_reportes: ["supervisor","dueño"],
-    gestionar_usuarios: ["dueño"],
-    gestionar_categorias: ["supervisor","dueño"],
-    aprobar_registros: ["supervisor","dueño"],
+    ver_costos: ["supervisor","dueño","superadmin"],
+    crear_producto: ["supervisor","dueño","superadmin"],
+    editar_producto: ["supervisor","dueño","superadmin"],
+    eliminar_producto: ["dueño","superadmin"],
+    registrar_movimiento: ["empleado","supervisor","dueño","superadmin"],
+    ajustar_stock_manual: ["supervisor","dueño","superadmin"],
+    ver_reportes: ["supervisor","dueño","superadmin"],
+    gestionar_usuarios: ["dueño","superadmin"], // <-- arreglado, ahora si puede eliminar
+    gestionar_categorias: ["supervisor","dueño","superadmin"], // <-- arreglado, ahora si puede agregar
+    aprobar_registros: ["supervisor","dueño","superadmin"],
+    gestionar_licencias: ["superadmin"],
   };
   return (tabla[accion] || []).includes(rol);
 }
@@ -840,10 +841,46 @@ function renderUsuarios(){
     </tbody></table>
   `;
 }
+async function crearUsuario(){
+  const nombre = document.getElementById('new-user-nombre')?.value.trim();
+  const usuario = document.getElementById('new-user-usuario')?.value.trim();
+  const pass = document.getElementById('new-user-pass')?.value.trim();
+  const rol = document.getElementById('new-user-rol')?.value || 'empleado';
+  if(!nombre || !usuario || !pass){ toast('Completa los campos'); return; }
+  try{
+    await apiPost('/api/usuarios/crear', { nombre, usuario, password: pass, rol });
+    toast('Usuario creado');
+    await cargarUsuarios();
+    renderUsuarios();
+  }catch(e){ toast(e.message); }
+}
 
-async function restablecerSistema(){ toast('Restablecer deshabilitado en modo MySQL compartido.'); }
-async function crearUsuario(){ toast('Crea usuarios desde Registro.'); }
-async function toggleUsuario(id){ toast('Usa Solicitudes para aprobar.'); }
+async function toggleUsuario(id){
+  try{
+    await apiPost('/api/usuarios/toggle', { id });
+    await cargarUsuarios();
+    renderUsuarios();
+  }catch(e){ toast(e.message); }
+}
+
+async function eliminarUsuario(id){
+  if(!confirm('¿Seguro que quieres eliminar este usuario?')) return;
+  try{
+    await apiPost('/api/usuarios/eliminar', { id });
+    toast('Usuario eliminado');
+    await cargarUsuarios();
+    renderUsuarios();
+  }catch(e){ toast(e.message); }
+}
+
+async function restablecerSistema(){
+  if(!confirm('¿Seguro? Borrará productos y usuarios de prueba.')) return;
+  try{
+    await apiPost('/api/sistema/restablecer', {});
+    toast('Sistema restablecido');
+    location.reload();
+  }catch(e){ toast(e.message); }
+}
 
 // enter para iniciar sesión
 document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
