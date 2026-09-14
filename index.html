@@ -66,9 +66,32 @@
   }
  .brand{padding:0 20px 22px;border-bottom:1px solid var(--border);margin-bottom:14px;}
  .brand b{font-size:16px;letter-spacing:.4px;}
- .brand.role-pill{
-    display:inline-block;margin-top:8px;font-size:11px;padding:3px 8px;
-    background:var(--accent-dim);color:var(--accent);font-family:ui-monospace,monospace;
+ .brand .role-pill{
+    display:inline-block;margin-top:8px;font-size:11px;padding:4px 10px;
+    font-family:ui-monospace,monospace;
+    border-radius:4px;
+    font-weight:700;
+    letter-spacing:.3px;
+    border:1px solid transparent;
+  }
+  /* Dueño: negro con rojo */
+  .role-pill.dueño{
+    background:#0f0f0f;
+    color:#E5595E;
+    border-color:#E5595E;
+    box-shadow: 0 0 0 1px rgba(229,89,94,.2);
+  }
+  /* Supervisor: verde */
+  .role-pill.supervisor{
+    background:#11291e;
+    color:#4CAF7D;
+    border-color:#4CAF7D;
+  }
+  /* Empleado: azul claro */
+  .role-pill.empleado{
+    background:#13263a;
+    color:#7ec8ff;
+    border-color:#7ec8ff;
   }
   nav a{
     display:block;padding:10px 20px;color:var(--muted);text-decoration:none;font-size:14px;
@@ -399,7 +422,9 @@ function puede(accion){
 
 // ---------- shell / navegación ----------
 function renderShell(){
-  document.getElementById('role-pill').textContent = ROLES[state.session.rol].label;
+  const pill = document.getElementById('role-pill');
+  pill.textContent = ROLES[state.session.rol].label;
+  pill.className = 'role-pill ' + state.session.rol; // dueño, supervisor o empleado
   document.getElementById('user-tag').textContent = state.session.nombre + " · " + state.session.usuario;
   const items = [
     {id:"dashboard", label:"Panel"},
