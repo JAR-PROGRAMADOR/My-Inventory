@@ -304,11 +304,26 @@ function toast(msg){
 // ---------- validación central (números vs texto, stock negativo) ----------
 function esEnteroValido(v){ return /^[0-9]+$/.test(String(v).trim()); }
 function esPrecioValido(v){ return /^[0-9]+(\.[0-9]{1,2})?$/.test(String(v).trim()); }
+function esSoloLetras(v){ return /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,50}$/.test(String(v).trim()); }
+
 function bloquearNoNumericos(e){
   const permitido = ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Home","End"];
   if(permitido.includes(e.key)) return;
-  const esPunto = e.key === "." && e.target.dataset.decimal === "1" &&!e.target.value.includes(".");
-  if(!/^[0-9]$/.test(e.key) &&!esPunto){ e.preventDefault(); }
+  const esPunto = e.key === "." && e.target.dataset.decimal === "1" && !e.target.value.includes(".");
+  if(!/^[0-9]$/.test(e.key) && !esPunto){ e.preventDefault(); }
+}
+// NUEVO: bloquea números en nombres
+function bloquearNumeros(e){
+  const permitido = ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Home","End"," "];
+  if(permitido.includes(e.key)) return;
+  if(/^[0-9]$/.test(e.key)){ e.preventDefault(); toast('No se permiten números'); }
+}
+
+function validarTexto(nombreCampo, valor){
+  if(!valor.trim()){ toast(`${nombreCampo} no puede estar vacío`); return false; }
+  if(/\d/.test(valor)){ toast(`${nombreCampo} no puede tener números`); return false; }
+  if(!esSoloLetras(valor)){ toast(`${nombreCampo} solo letras (2-50)`); return false; }
+  return true;
 }
 
 // ---------- login / registro ----------
@@ -566,7 +581,7 @@ function abrirFormProducto(id){
         <div class="field-inline"><label>Código</label>
           <input id="f-codigo" type="text" value="${p?p.codigo:''}" placeholder="P-0004"></div>
         <div class="field-inline"><label>Nombre</label>
-          <input id="f-nombre" type="text" value="${p?p.nombre:''}"></div>
+          <input id="f-nombre" type="text" value="${p?p.nombre:''}" onkeydown="bloquearNumeros(event)" oninput="this.value = this.value.replace(/[0-9]/g,'')"></div>
         <div class="field-inline"><label>Categoría</label>
           <select id="f-categoria">${state.categorias.map(c=>`<option value="${c.id}" ${p&&p.categoria_id==c.id?'selected':''}>${c.nombre}</option>`).join('')}</select></div>
       </div>
@@ -601,6 +616,17 @@ function abrirFormProducto(id){
 async function guardarProducto(id){
   const codigo = document.getElementById('f-codigo').value.trim();
   const nombre = document.getElementById('f-nombre').value.trim();
+  function esSoloLetras(v){ return /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,50}$/.test(String(v).trim()); }
+  function validarTexto(nombreCampo, valor){
+  if(!valor.trim()){ toast(`${nombreCampo} no puede estar vacío`); return false; }
+  if(/\d/.test(valor)){ toast(`${nombreCampo} no puede tener números`); return false; }
+  return true;
+}
+  function bloquearNumeros(e){
+  if(["Backspace","Delete","ArrowLeft","ArrowRight","Tab"].includes(e.key)) return;
+  if(/^[0-9]$/.test(e.key)){ e.preventDefault(); toast('No se permiten números'); }
+}
+  if(!validarTexto('El producto', nombre)) return;
   const categoria_id = parseInt(document.getElementById('f-categoria').value);
   const compra = document.getElementById('f-compra').value.trim();
   const venta = document.getElementById('f-venta').value.trim();
