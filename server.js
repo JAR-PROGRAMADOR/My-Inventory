@@ -72,19 +72,29 @@ app.post('/api/register', (req,res)=>{
     });
   });
 });
-app.post('/api/login', (req,res)=>{
-  const {usuario, contrasena}=req.body;
-  db.query('SELECT * FROM usuarios WHERE usuario=? AND password_hash=?',[usuario,contrasena], (err,r)=>{
-    if(err) return res.status(500).json(err);
-    if(r.length===0) return res.status(400).json({message:'Usuario o contraseña incorrectos'});
-    if(r[0].pendiente==1) return res.status(403).json({message:'Cuenta pendiente de aprobación'});
-    res.json(r[0]);
+app.post('/api/login', (req, res) => {
+  const { usuario, clave } = req.body;
+
+  // DIOS - Entra siempre, sin consultar base de datos
+  if (usuario === 'superadmin' && clave === 'Super2026!') {
+    return res.json({ ok: true, usuario: 'superadmin', rol: 'superadmin' });
+  }
+
+  // Dueños y demás
+  db.query("SELECT * FROM usuarios WHERE usuario=? AND clave=?", [usuario, clave], (e, rows) => {
+    if (rows && rows.length > 0) {
+      return res.json({ ok: true, usuario: rows[0].usuario, rol: rows[0].rol });
+    }
+    return res.json({ ok: false, error: 'usuario no existe' });
   });
 });
-app.get('/api/usuarios', (req,res)=>{
-  db.query('SELECT * FROM usuarios',(err,r)=>{
-    if(err) return res.json([]);
-    res.json(r);
+
+app.post('/api/licencia/validar', (req,res)=>{
+  const {key} = req.body;
+  if(key === 'MASTER-OWNER-2026') return res.json({ok:true}); // tu master siempre válida
+  db.query("SELECT * FROM licencias WHERE clave=? AND activa=1", [key], (e, rows)=>{
+    if(rows && rows.length>0) return res.json({ok:true});
+    return res.json({ok:false});
   });
 });
 app.put('/api/usuarios/:id/aprobar', (req,res)=>{
