@@ -1,13 +1,22 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>SuperAdmin</title>
-<style>body{font-family:sans-serif;padding:20px;max-width:600px;margin:auto}input,select,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #ccc}button{background:black;color:white;cursor:pointer}.card{border:1px solid #ddd;padding:12px;border-radius:12px;margin:10px 0}</style>
+<style>body{font-family:sans-serif;padding:20px;max-width:600px;margin:auto}input,select,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #ccc}button{background:black;color:white}.card{border:1px solid #ddd;padding:12px;border-radius:12px;margin:10px 0} #panel{display:none}</style>
 </head><body>
-<h2>Panel SuperAdmin - Dueño</h2>
+<h2>Login SuperAdmin</h2>
+<div id="login">
+<input id="u" placeholder="Usuario" value="superadmin">
+<input id="p" type="password" placeholder="Contraseña" value="Super2026!">
+<button onclick="login()">Entrar</button>
+<div id="msg"></div>
+</div>
+<div id="panel">
+<h2>Panel Dueño</h2>
 <input id="cliente" placeholder="Nombre del cliente">
-<select id="dias"><option value="1">24 Horas</option><option value="7">7 días</option><option value="30" selected>30 días</option><option value="90">90 días</option><option value="180">6 meses</option><option value="365">1 Año</option></select>
+<select id="dias"><option value="1">24 Horas</option><option value="7">7 días</option><option value="30" selected>30 días</option><option value="365">1 Año</option></select>
 <button onclick="crear()">Generar Licencia</button>
 <div id="resultado"></div>
-<h3>Licencias Activas</h3>
-<div id="lista"></div>
+<h3>Licencias</h3><div id="lista"></div>
+<h3>Usuarios del Sistema</h3><div id="listaUsuarios"></div>
+</div>
 <script src="superadmin.js"></script>
 </body></html>
