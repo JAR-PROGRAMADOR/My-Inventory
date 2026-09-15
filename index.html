@@ -414,6 +414,8 @@ async function doRegister(){
      ? "Cuenta creada como Dueño. Ya puedes iniciar sesión."
       : "Cuenta creada. Un dueño debe aprobarla.";
   }catch(e){
+    console.log('ERROR AL REGISTRAR');
+    err.textContent = e.message || "Error de servidor.";
     err.textContent = e.message || "Ese nombre de usuario ya existe.";
   }finally{
     btn.disabled = false;
