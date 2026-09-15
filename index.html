@@ -466,6 +466,43 @@ function renderShell(){
     items.push({id:"solicitudes", label:"Solicitudes" + (pendientes? ` (${pendientes})` : "")});
   }
   if(puede('gestionar_usuarios')) items.push({id:"usuarios", label:"Usuarios"});
+  if(state.session.rol === 'superadmin'){
+  navHtml += `<div class="nav-item" data-view="licencias" onclick="goTo('licencias')"><span>🔑</span> Licencias Master</div>`;
+}
+async function generarLicenciaSuper(){
+  const cliente = document.getElementById('lic_cliente').value || 'Cliente';
+  const cantidad = document.getElementById('lic_cantidad').value || 30;
+  const unidad = document.getElementById('lic_unidad').value;
+  const r = await fetch('/api/licencia/generar',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente,cantidad,unidad})});
+  const d = await r.json();
+  document.getElementById('lic_result').innerHTML = `
+    <div style="background:#0f2a1a; border:1px solid #1f8a4a; padding:12px; border-radius:10px; color:#7CFFA0">
+      <b>KEY CREADA:</b> <span style="font-family:monospace; font-size:16px">${d.key}</span> 
+      <button onclick="navigator.clipboard.writeText('${d.key}')" style="margin-left:10px; padding:4px 8px">Copiar</button><br>
+      <small>Cliente: ${cliente} | Duración: ${cantidad} ${unidad}</small>
+    </div>`;
+  document.getElementById('lic_cliente').value='';
+  cargarLicenciasSuper();
+}
+async function cargarLicenciasSuper(){
+  const r = await fetch('/api/licencias');
+  const lista = await r.json();
+  if(!lista.length){ document.getElementById('lic_lista').innerHTML='<p style="color:#888">No hay licencias aún</p>'; return; }
+  document.getElementById('lic_lista').innerHTML = `
+    <table class="table"><thead><tr><th>Clave</th><th>Cliente</th><th>Expira</th><th>Activa</th><th></th></tr></thead>
+    <tbody>${lista.map(l=>`<tr>
+      <td style="font-family:monospace">${l.clave}</td>
+      <td>${l.cliente||''}</td>
+      <td>${l.expira_en ? new Date(l.expira_en).toLocaleString() : 'Sin expiración'}</td>
+      <td>${l.activa? '✅':'❌'}</td>
+      <td><button onclick="eliminarLicencia('${l.id}')" class="btn btn-sm" style="background:#3a1a1a">Borrar</button></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+async function eliminarLicencia(id){
+  if(!confirm('Borrar licencia?')) return;
+  await fetch('/api/licencia/eliminar',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})});
+  cargarLicenciasSuper();
+}
 
   const nav = document.getElementById('nav-menu');
   nav.innerHTML = "";
@@ -484,18 +521,29 @@ function marcarNavActiva(){
   });
 }
 const TITULOS = {
-  dashboard:"Panel", productos:"Productos", movimientos:"Movimientos de inventario",
-  reportes:"Reportes", categorias:"Categorías", usuarios:"Usuarios", solicitudes:"Solicitudes de registro"
+  dashboard:"Dashboard",
+  productos:"Productos", 
+  movimientos:"Movimientos",
+  reportes:"Reportes", 
+  categorias:"Categorías", 
+  usuarios:"Usuarios",
+  solicitudes:"Solicitudes",
+  licencias:"Licencias Master"
 };
 function goTo(view){
   state.view = view;
   document.getElementById('view-title').textContent = TITULOS[view];
   marcarNavActiva();
   const renderers = {
-    dashboard: renderDashboard, productos: renderProductos, movimientos: renderMovimientos,
-    reportes: renderReportes, categorias: renderCategorias, usuarios: renderUsuarios,
-    solicitudes: renderSolicitudes
-  };
+  dashboard: renderDashboard, 
+  productos: renderProductos, 
+  movimientos: renderMovimientos,
+  reportes: renderReportes, 
+  categorias: renderCategorias, 
+  usuarios: renderUsuarios,
+  solicitudes: renderSolicitudes,
+  licencias: renderLicencias   // <-- ESTA LÍNEA NUEVA
+};
   renderers[view]();
 }
 
@@ -844,6 +892,41 @@ function renderSolicitudes(){
     root.innerHTML = '<div class="panel"><div class="empty">No hay solicitudes pendientes.</div></div>';
     return;
   }
+  function renderLicencias(){
+  if(state.session.rol !== 'superadmin') return;
+  document.getElementById('main-content').innerHTML = `
+    <div class="card" style="padding:20px">
+      <h3>🔑 Generador de Licencias Master</h3>
+      <div style="display:grid; grid-template-columns: 1fr 100px 130px auto; gap:10px; margin:20px 0">
+        <input id="lic_cliente" placeholder="Cliente / Empresa" style="padding:10px; border-radius:8px; background:#111; border:1px solid #333; color:#fff">
+        <input id="lic_cantidad" type="number" value="30" style="padding:10px; border-radius:8px; background:#111; border:1px solid #333; color:#fff">
+        <select id="lic_unidad" style="padding:10px; border-radius:8px; background:#111; border:1px solid #333; color:#fff">
+          <option value="minutos">Minutos</option>
+          <option value="dias" selected>Días</option>
+          <option value="meses">Meses</option>
+        </select>
+        <button onclick="generarLicenciaSuper()" class="btn btn-primary">Generar KEY</button>
+      </div>
+      <div id="lic_result"></div>
+      <div id="lic_lista" style="margin-top:20px"></div>
+    </div>
+  `;
+  cargarLicenciasSuper();
+}
+
+async function generarLicenciaSuper(){
+  const cliente = document.getElementById('lic_cliente').value || 'Cliente';
+  const cantidad = document.getElementById('lic_cantidad').value;
+  const unidad = document.getElementById('lic_unidad').value;
+  const r = await fetch('/api/licencia/generar',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente,cantidad,unidad})});
+  const d = await r.json();
+  document.getElementById('lic_result').innerHTML = `<div style="background:#0f2a1a; border:1px solid #1f8a4a; padding:12px; border-radius:10px; color:#7CFFA0; margin-top:10px">KEY: <b style="font-family:monospace">${d.key}</b> - ${cantidad} ${unidad} - Cliente: ${cliente} <button onclick="navigator.clipboard.writeText('${d.key}')">Copiar</button></div>`;
+  cargarLicenciasSuper();
+}
+async function cargarLicenciasSuper(){
+  const r = await fetch('/api/licencias'); const lista = await r.json();
+  document.getElementById('lic_lista').innerHTML = `<table class="table"><tr><th>Clave</th><th>Cliente</th><th>Expira</th><th></th></tr>${lista.map(l=>`<tr><td style="font-family:monospace">${l.clave}</td><td>${l.cliente||''}</td><td>${l.expira_en?new Date(l.expira_en).toLocaleString():''}</td><td><button onclick="fetch('/api/licencia/eliminar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'${l.id}'})}).then(()=>cargarLicenciasSuper())">Borrar</button></td></tr>`).join('')}</table>`;
+}
   const esDueño = state.session.rol === 'dueño';
   root.innerHTML = `
     <div class="panel">

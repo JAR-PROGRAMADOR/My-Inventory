@@ -127,14 +127,20 @@ app.post('/api/categorias',(req,res)=>{
 });
 
 // LICENCIAS
-app.get('/api/licencias',(req,res)=>{ db.query("SELECT * FROM licencias", (e,r)=> res.json(r||[])); });
 app.post('/api/licencia/generar',(req,res)=>{
   const key = 'LIC-'+Math.random().toString(36).substring(2,8).toUpperCase()+'-'+Date.now().toString().slice(-4);
   const cliente = req.body.cliente || 'Cliente';
-  const dias = parseInt(req.body.dias) || 30;
-  db.query("INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL? DAY))",[key, cliente, dias], (e)=>{
-    if(e){ console.log(e); return res.json({key}); }
-    res.json({key, cliente, dias});
+  const cantidad = parseInt(req.body.cantidad) || 30;
+  const unidad = req.body.unidad || 'dias'; // minutos | dias | meses
+
+  let sql = "";
+  if(unidad === 'minutos') sql = "INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL ? MINUTE))";
+  else if(unidad === 'meses') sql = "INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL ? MONTH))";
+  else sql = "INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL ? DAY))";
+
+  db.query(sql,[key, cliente, cantidad], (e)=>{
+    if(e){ console.log(e); return res.status(500).json(e); }
+    res.json({ok:true, key, cliente, cantidad, unidad});
   });
 });
 app.post('/api/licencia/validar', (req,res)=>{
