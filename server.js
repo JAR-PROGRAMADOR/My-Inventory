@@ -99,16 +99,48 @@ app.delete('/api/usuarios/:id', (req,res)=>{
     res.json({ok:true});
   });
 });
-function initLicencias(){
-  db.query(`CREATE TABLE IF NOT EXISTS licencias (id INT AUTO_INCREMENT PRIMARY KEY, clave VARCHAR(100) UNIQUE NOT NULL, cliente VARCHAR(100), activa TINYINT(1) DEFAULT 1, creada_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`, (e)=>{ if(!e) db.query("INSERT IGNORE INTO licencias (clave, cliente) VALUES ('MASTER-OWNER-2026','Dueño')", ()=>{}); });
+// === SUPERADMIN Y LICENCIAS CON TIEMPO ===
+function initLicenciasV2(){
+  db.query(`CREATE TABLE IF NOT EXISTS licencias (id INT AUTO_INCREMENT PRIMARY KEY, clave VARCHAR(100) UNIQUE NOT NULL, cliente VARCHAR(100), activa TINYINT(1) DEFAULT 1, creada_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP, expira_en DATETIME NULL)`, (e)=>{
+    if(!e){
+      db.query("INSERT IGNORE INTO licencias (clave, cliente, expira_en) VALUES ('MASTER-OWNER-2026','Dueño', DATE_ADD(NOW(), INTERVAL 10 YEAR))", ()=>{});
+      // intenta agregar columna si la tabla es vieja
+      db.query("ALTER TABLE licencias ADD COLUMN IF NOT EXISTS expira_en DATETIME NULL", ()=>{});
+    }
+  });
+  db.query(`CREATE TABLE IF NOT EXISTS categorias (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) UNIQUE NOT NULL)`, ()=>{});
 }
-initLicencias();
+initLicenciasV2();
+
 app.post('/api/licencia/validar',(req,res)=>{
   const k=req.body.key;
-  if(k==='MASTER-OWNER-2026') return res.json({ok:true});
-  db.query("SELECT * FROM licencias WHERE clave=? AND activa=1",[k],(e,r)=>{
-    res.json({ok: r && r.length>0})
+  if(k==='MASTER-OWNER-2026') return res.json({ok:true, master:true});
+  db.query("SELECT * FROM licencias WHERE clave=? AND activa=1 AND (expira_en IS NULL OR expira_en > NOW())",[k],(e,r)=>{
+    res.json({ok: r && r.length>0});
   });
+});
+app.post('/api/licencia/generar',(req,res)=>{
+  const cliente = req.body.cliente || 'Cliente';
+  const dias = parseInt(req.body.dias) || 30;
+  const nuevaKey = 'LIC-'+Math.random().toString(36).substring(2,7).toUpperCase()+'-'+Date.now().toString().slice(-4);
+  db.query("INSERT INTO licencias (clave, cliente, expira_en) VALUES (?,?, DATE_ADD(NOW(), INTERVAL? DAY))", [nuevaKey, cliente, dias], (err)=>{
+    if(err) return res.status(500).json({error: err.message});
+    res.json({key: nuevaKey, cliente, dias});
+  });
+});
+app.get('/api/licencias',(req,res)=>{
+  db.query("SELECT *, DATEDIFF(expira_en, NOW()) as dias_restantes FROM licencias ORDER BY id DESC", (e,r)=> res.json(r||[]));
+});
+app.post('/api/licencia/eliminar',(req,res)=>{
+  db.query("DELETE FROM licencias WHERE id=?",[req.body.id], ()=> res.json({ok:true}));
+});
+
+// === CATEGORIAS ILIMITADAS ===
+app.get('/api/categorias',(req,res)=>{ db.query("SELECT * FROM categorias", (e,r)=> res.json(r||[])); });
+app.post('/api/categorias',(req,res)=>{
+  const nombre = req.body.nombre?.trim();
+  if(!nombre) return res.status(400).json({error:'nombre vacío'});
+  db.query("INSERT INTO categorias (nombre) VALUES (?)",[nombre], (e)=>{ if(e) return res.status(500).json({error:e.message}); res.json({ok:true}); });
 });
 const PORT = process.env.PORT || 12000;
 app.listen(PORT, ()=> console.log('Servidor corriendo '+PORT));
