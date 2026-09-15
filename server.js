@@ -150,8 +150,11 @@ function initLicencias(){
 }
 initLicencias();
 app.post('/api/licencia/validar',(req,res)=>{
-  const k=req.body.key; if(k==='MASTER-OWNER-2026') return res.json({ok:true});
-  db.query("SELECT * FROM licencias WHERE clave=? AND activa=1",[k],(e,r)=>{ res.json({ok: r && r.length>0}) });
+  const k=req.body.key;
+  if(k==='MASTER-OWNER-2026') return res.json({ok:true});
+  db.query("SELECT * FROM licencias WHERE clave=? AND activa=1",[k],(e,r)=>{
+    res.json({ok: r && r.length>0})
+  });
 });
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, ()=> console.log('Servidor corriendo '+PORT));
