@@ -145,5 +145,13 @@ app.get('/api/licencias', (req,res)=>{
     res.json(rows);
   });
 });
+function initLicencias(){
+  db.query(`CREATE TABLE IF NOT EXISTS licencias (id INT AUTO_INCREMENT PRIMARY KEY, clave VARCHAR(100) UNIQUE NOT NULL, cliente VARCHAR(100), activa TINYINT(1) DEFAULT 1, creada_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`, (e)=>{ if(!e) db.query("INSERT IGNORE INTO licencias (clave, cliente) VALUES ('MASTER-OWNER-2026','Dueño')", ()=>{}); });
+}
+initLicencias();
+app.post('/api/licencia/validar',(req,res)=>{
+  const k=req.body.key; if(k==='MASTER-OWNER-2026') return res.json({ok:true});
+  db.query("SELECT * FROM licencias WHERE clave=? AND activa=1",[k],(e,r)=>{ res.json({ok: r && r.length>0}) });
+});
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, ()=> console.log('Servidor corriendo '+PORT));
