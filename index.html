@@ -525,27 +525,31 @@ function goTo(view){
 }
 
 function renderDashboard(){
-  const root = document.getElementById('main-content') || document.getElementById('view-root') || document.getElementById('content') || document.querySelector('main');
+  const root = document.getElementById('view-root');
   if(!root) return;
   try{
     const productos = state.productos || [];
-    const total = productos.length;
-    const bajo = productos.filter(p=> (p.stock||0) <= (p.stock_minimo||5)).length;
-    const valor = productos.reduce((s,p)=> s + ((p.stock||0) * (p.precio_compra||0)), 0);
+    const totalSKUs = productos.length;
+    const bajoStock = productos.filter(p=> (p.stock||0) <= (p.stock_minimo||5)).length;
+    const valorTotal = productos.reduce((s,p)=> s + ((p.stock||0)*(p.precio_compra||0)), 0);
+    const valorVenta = productos.reduce((s,p)=> s + ((p.stock||0)*(p.precio_venta||0)), 0);
+
     root.innerHTML = `
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:16px; margin-bottom:20px">
-        <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px"><h4 style="color:#888">Productos</h4><h2 style="color:#fff">${total}</h2></div>
-        <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px"><h4 style="color:#888">Stock Bajo</h4><h2 style="color:${bajo>0?'#ff4444':'#00ff88'}">${bajo}</h2></div>
-        <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px"><h4 style="color:#888">Valor Inventario</h4><h2 style="color:#fff">$${valor.toFixed(2)}</h2></div>
+      <div class="cards">
+        <div class="kpi"><div class="n">${totalSKUs}</div><div class="l">Total Productos</div></div>
+        <div class="kpi alert"><div class="n">${bajoStock}</div><div class="l">Bajo Stock</div></div>
+        <div class="kpi"><div class="n">$${valorTotal.toLocaleString('es-CO')}</div><div class="l">Valor Costo</div></div>
+        <div class="kpi"><div class="n">$${valorVenta.toLocaleString('es-CO')}</div><div class="l">Valor Venta</div></div>
       </div>
-      <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px">
-        <h3 style="color:#fff">Bienvenido SuperAdmin ${state.session.usuario||''}</h3>
-        <p style="color:#888">Sistema funcionando. Total: ${total} productos</p>
-        ${total===0?'<p style="color:#FFD700">Ve a Productos -> Nuevo producto para empezar</p>':''}
+      <div class="panel">
+        <h3>Resumen del sistema</h3>
+        <p style="color:var(--muted); font-size:13px">Inventario actualizado. Tienes ${totalSKUs} productos registrados, ${bajoStock} con stock bajo.</p>
+        ${totalSKUs===0?'<div class="empty">Aún no hay productos. Ve a Productos → + Nuevo producto</div>': tablaProductosSimple(productos.slice(0,5))}
       </div>
     `;
   }catch(e){
-    root.innerHTML = `<div style="color:red; padding:20px">Error Dashboard: ${e.message}</div>`;
+    console.error(e);
+    root.innerHTML = `<div style="color:red; padding:20px">Error en dashboard: ${e.message}</div>`;
   }
 }
 
