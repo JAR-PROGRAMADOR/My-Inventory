@@ -143,6 +143,55 @@ app.post('/api/licencia/generar',(req,res)=>{
     res.json({ok:true, key, cliente, cantidad, unidad});
   });
 });
+// ====== SISTEMA DE LICENCIAS MASTER (PARA SUPERADMIN) ======
+db.query(`CREATE TABLE IF NOT EXISTS licencias (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  clave VARCHAR(100) UNIQUE,
+  cliente VARCHAR(100),
+  activa TINYINT DEFAULT 1,
+  expira_en DATETIME,
+  creada_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)`);
+
+app.get('/api/licencias', (req,res)=>{
+  db.query("SELECT * FROM licencias ORDER BY id DESC", (e,r)=>{
+    if(e){ console.log(e); return res.json([]); }
+    res.json(r);
+  });
+});
+
+app.post('/api/licencia/generar', (req,res)=>{
+  const key = 'LIC-'+Math.random().toString(36).substring(2,8).toUpperCase()+'-'+Date.now().toString().slice(-4);
+  const cliente = req.body.cliente || 'Cliente';
+  const cantidad = parseInt(req.body.cantidad) || 30;
+  const unidad = req.body.unidad || 'dias';
+
+  let sql = "";
+  if(unidad === 'minutos') sql = "INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL? MINUTE))";
+  else if(unidad === 'meses') sql = "INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL? MONTH))";
+  else sql = "INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL? DAY))";
+
+  db.query(sql, [key, cliente, cantidad], (e)=>{
+    if(e){ console.log(e); return res.status(500).json(e); }
+    res.json({ok:true, key, cliente, cantidad, unidad});
+  });
+});
+
+app.post('/api/licencia/eliminar', (req,res)=>{
+  db.query("DELETE FROM licencias WHERE id=?", [req.body.id], (e)=>{
+    if(e) return res.status(500).json(e);
+    res.json({ok:true});
+  });
+});
+
+app.get('/api/licencia/verificar', (req,res)=>{
+  const clave = req.query.clave;
+  if(clave === 'MASTER-OWNER-2026') return res.json({valida:true, eterna:true});
+  db.query("SELECT * FROM licencias WHERE clave=? AND activa=1 AND (expira_en IS NULL OR expira_en > NOW())", [clave], (e,r)=>{
+    if(e) return res.json({valida:false});
+    res.json({valida: r.length>0, datos: r[0]||null});
+  });
+});
 app.post('/api/licencia/validar', (req,res)=>{
   const {key} = req.body;
   if(key === 'MASTER-OWNER-2026') return res.json({ok:true});
