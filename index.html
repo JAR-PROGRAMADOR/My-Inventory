@@ -337,15 +337,21 @@ function mostrarLogin(){
 }
 
 async function iniciarSesion(){
-  const usuario = document.querySelector('input[placeholder="Usuario"]')?.value || document.getElementById('usuario')?.value || document.querySelectorAll('input')[0].value;
-  const clave = document.querySelector('input[type="password"]').value;
-  const licenciaInput = document.querySelectorAll('input')[2];
-
+  const inputs = document.querySelectorAll('input');
+  const usuario = inputs[0].value.trim();
+  const clave = inputs[1].value.trim();
+  const licenciaVal = inputs[2]? inputs[2].value.trim() : '';
   const btn = document.querySelector('button');
+
+  if(!usuario ||!clave){ alert('Pon usuario y clave'); return; }
   btn.textContent = 'Validando...';
 
   try{
-    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,clave})});
+    const r = await fetch('/api/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({usuario, clave})
+    });
     const data = await r.json();
 
     if(!data.ok){
@@ -354,29 +360,42 @@ async function iniciarSesion(){
       return;
     }
 
-    // Si es SUPERADMIN, entra directo SIN pedir licencia
+    // SUPERADMIN ENTRA SIN LICENCIA
     if(data.rol === 'superadmin'){
-    localStorage.setItem('usuario','superadmin');
-    localStorage.setItem('rol','superadmin');
-    location.reload(); // <--- aquí
-  return;
-}
+      localStorage.setItem('usuario','superadmin');
+      localStorage.setItem('rol','superadmin');
+      location.reload();
+      return;
+    }
 
-    // Si es owner/cliente, ahora si valida licencia
-    const key = licenciaInput.value.trim();
-    if(!key){ alert('Falta la licencia'); btn.textContent='Iniciar sesión'; return; }
+    // OWNER / CLIENTE SI NECESITA LICENCIA
+    if(!licenciaVal){
+      alert('Pon tu licencia');
+      btn.textContent = 'Iniciar sesión';
+      return;
+    }
 
-    const r2 = await fetch('/api/licencia/validar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});
+    const r2 = await fetch('/api/licencia/validar',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({key: licenciaVal})
+    });
     const d2 = await r2.json();
+
     if(d2.ok){
       localStorage.setItem('usuario', data.usuario);
       localStorage.setItem('rol', data.rol);
-      window.location.href = '/index.html';
-    } else {
+      location.reload();
+    }else{
       alert('Licencia vencida o invalida');
-      btn.textContent='Iniciar sesión';
+      btn.textContent = 'Iniciar sesión';
     }
-  }catch(e){ console.log(e); btn.textContent='Iniciar sesión'; }
+
+  }catch(e){
+    console.log(e);
+    alert('Error de servidor');
+    btn.textContent = 'Iniciar sesión';
+  }
 }
 async function doRegister(){
   const btn = document.getElementById('btn-register');
