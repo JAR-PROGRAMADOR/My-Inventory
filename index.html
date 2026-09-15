@@ -764,6 +764,31 @@ function renderReportes(){
     if(m.tipo === 'ajuste'){ movsPorTipo.ajuste += Math.abs(m.stock_nuevo - m.stock_anterior); }
     else{ movsPorTipo[m.tipo] = (movsPorTipo[m.tipo]||0) + m.cantidad; }
   });
+  // ---------- CATEGORÍAS ----------
+function renderCategorias(){
+  const root = document.getElementById('view-root');
+  root.innerHTML = `
+    <div class="panel">
+      <h3>Nueva categoría</h3>
+      <div class="grid3">
+        <div class="field-inline"><label>Nombre</label><input id="c-nombre" type="text"></div>
+        <div style="align-self:end"><button class="btn" onclick="crearCategoria()">Agregar</button></div>
+      </div>
+    </div>
+    <table><thead><tr><th>Nombre</th><th># Productos</th></tr></thead><tbody>
+    ${state.categorias.map(c=>`<tr><td>${c.nombre}</td><td>${state.productos.filter(p=>p.categoria_id===c.id).length}</td></tr>`).join('')}
+    </tbody></table>
+  `;
+}
+async function crearCategoria(){
+  const nombre = document.getElementById('c-nombre').value.trim();
+  if(!nombre){ toast('Escribe un nombre de categoría.'); return; }
+  state.categorias.push({id: Date.now(), nombre});
+  await saveKey('categorias', state.categorias);
+  renderCategorias();
+  toast('Categoría creada.');
+}
+
 
   root.innerHTML = `
     <div class="cards">
@@ -790,20 +815,6 @@ function renderReportes(){
   `;
 }
 
-// ---------- CATEGORÍAS ----------
-function renderCategorias(){
-  const root = document.getElementById('view-root');
-  root.innerHTML = `
-    <div class="panel">
-      <h3>Categoría</h3>
-      <p class="locked-note">Por ahora solo "General" (compartido). Si quieres más categorías en MySQL, avísame.</p>
-    </div>
-    <table><thead><tr><th>Nombre</th><th># Productos</th></tr></thead><tbody>
-    ${state.categorias.map(c=>`<tr><td>${c.nombre}</td><td>${state.productos.filter(p=>p.categoria_id==c.id).length}</td></tr>`).join('')}
-    </tbody></table>
-  `;
-}
-async function crearCategoria(){ toast('Categorías ahora son fijas en MySQL.'); }
 
 // ---------- SOLICITUDES DE REGISTRO ----------
 function renderSolicitudes(){
