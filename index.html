@@ -966,8 +966,8 @@ function renderSolicitudes(){
   const pendientes = state.usuarios.filter(u => u.pendiente==1||u.pendiente==true);
   if(!pendientes.length){
     root.innerHTML = '<div class="panel"><div class="empty">No hay solicitudes pendientes.</div></div>';
-    <div class="nav-item" data-view="licencias" onclick="goTo('licencias')" style="color:#FFD700; border:1px solid #FFD700;">🔑 Licencias Master</div>
     return;
+    <div class="nav-item" data-view="licencias" onclick="goTo('licencias')" style="color:#FFD700; border:1px solid #FFD700;">🔑 Licencias Master</div>
   }
   function renderLicencias(){
   if(state.session.rol !== 'superadmin') return;
