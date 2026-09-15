@@ -361,7 +361,8 @@ async function doLogin(){
     if(data.rol === 'superadmin'){
       const s = { usuario:'superadmin', nombre:'Super Admin', rol:'superadmin' };
       state.session = s;
-      localStorage.setItem('session', JSON.stringify(s));
+      llocalStorage.setItem('session', JSON.stringify(data.session || data));
+      state.session = data.session || data;
       localStorage.setItem('rol','superadmin');
       localStorage.setItem('usuario','superadmin');
       document.getElementById('login-screen').style.display='none';
@@ -628,31 +629,28 @@ async function cargarLicenciasSuper(){
 // ---------- DASHBOARD ----------
 function renderDashboard(){
   const root = document.getElementById('view-root');
-  const totalSKUs = state.productos.length;
-  const bajos = state.productos.filter(p => Number(p.stock) <= Number(p.stock_minimo));
-  const totalUnidades = state.productos.reduce((a,p)=>a+Number(p.stock),0);
-  let valorInventario = null;
-  if(puede('ver_costos')){
-    valorInventario = state.productos.reduce((a,p)=> a + Number(p.stock) * Number(p.precio_compra), 0);
+  if(!root) return;
+  try{
+    const productos = state.productos || [];
+    const totalSKUs = (state.productos || []).length;
+    const bajoStock = productos.filter(p=> (p.stock||0) <= (p.stock_minimo||5)).length;
+    const valorTotal = productos.reduce((s,p)=> s + ((p.stock||0)*(p.precio_compra||0)), 0);
+
+    root.innerHTML = `
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px">
+        <div class="card"><h4>Productos</h4><h2>${totalSKUs}</h2></div>
+        <div class="card"><h4>Bajo Stock</h4><h2 style="color:${bajoStock>0?'red':'#0f0'}">${bajoStock}</h2></div>
+        <div class="card"><h4>Valor</h4><h2>$${valorTotal.toFixed(2)}</h2></div>
+      </div>
+      <div class="card" style="margin-top:16px; padding:20px">
+        <h3>Bienvenido ${state.session?.usuario || ''} - ${state.session?.rol || ''}</h3>
+        <p>Sistema OK. Si ves esto, el bucle se acabó.</p>
+      </div>
+    `;
+  }catch(e){
+    console.error(e);
+    root.innerHTML = `<div style="color:red; padding:20px">Error en dashboard: ${e.message}</div>`;
   }
-  const pendientesReg = puede('aprobar_registros')? state.usuarios.filter(u=>u.pendiente==1||u.pendiente==true).length : 0;
-  root.innerHTML = `
-    <div class="cards">
-      <div class="kpi"><div class="n">${totalSKUs}</div><div class="l">Productos activos (compartidos)</div></div>
-      <div class="kpi"><div class="n">${totalUnidades}</div><div class="l">Unidades en stock</div></div>
-      <div class="kpi ${bajos.length? 'alert':''}"><div class="n">${bajos.length}</div><div class="l">Alertas de stock bajo</div></div>
-      ${valorInventario!==null? `<div class="kpi"><div class="n">$${valorInventario.toLocaleString('es-CO')}</div><div class="l">Valor de inventario (costo)</div></div>` : ''}
-      ${puede('aprobar_registros')? `<div class="kpi ${pendientesReg?'alert':''}"><div class="n">${pendientesReg}</div><div class="l">Registros por aprobar</div></div>` : ''}
-    </div>
-    <div class="panel">
-      <h3>Productos con stock en o bajo el mínimo</h3>
-      ${bajos.length? tablaProductosSimple(bajos) : '<div class="empty">No hay alertas de stock en este momento.</div>'}
-    </div>
-    <div class="panel">
-      <h3>Últimos movimientos</h3>
-      ${tablaMovimientos(state.movimientos.slice(-6).reverse())}
-    </div>
-  `;
 }
 function tablaProductosSimple(lista){
   return `<table><thead><tr><th>Código</th><th>Producto</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>
