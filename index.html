@@ -336,67 +336,47 @@ function mostrarLogin(){
   document.getElementById('login-box').style.display = 'block';
 }
 
-async function iniciarSesion(){
-  const inputs = document.querySelectorAll('input');
-  const usuario = inputs[0].value.trim();
-  const clave = inputs[1].value.trim();
-  const licenciaVal = inputs[2]? inputs[2].value.trim() : '';
-  const btn = document.querySelector('button');
-
-  if(!usuario ||!clave){ alert('Pon usuario y clave'); return; }
-  btn.textContent = 'Validando...';
-
+async function doLogin(){
+  const usuario = document.getElementById('login-user').value.trim();
+  const clave = document.getElementById('login-pass').value.trim();
+  const btn = document.getElementById('btn-login');
+  const err = document.getElementById('login-error');
+  err.textContent = '';
+  if(!usuario || !clave){ err.textContent='Pon usuario y clave'; return; }
+  btn.textContent='Validando...'; btn.disabled=true;
   try{
-    const r = await fetch('/api/login',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({usuario, clave})
-    });
+    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,clave})});
     const data = await r.json();
-
     if(!data.ok){
-      alert('Error validando licencia - usuario no existe');
-      btn.textContent = 'Iniciar sesión';
-      return;
+      err.textContent = data.error || 'Usuario o clave incorrecta';
+      btn.textContent='Iniciar sesión'; btn.disabled=false; return;
     }
-
-    // SUPERADMIN ENTRA SIN LICENCIA
     if(data.rol === 'superadmin'){
-      localStorage.setItem('usuario','superadmin');
+      const s = { usuario:'superadmin', nombre:'Super Admin', rol:'superadmin' };
+      state.session = s;
+      localStorage.setItem('session', JSON.stringify(s));
       localStorage.setItem('rol','superadmin');
-      location.reload();
+      localStorage.setItem('usuario','superadmin');
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app').classList.add('active');
+      await loadAll(); renderShell(); goTo('dashboard');
+      document.getElementById('panel-superadmin').style.display='block';
+      cargarLics();
       return;
     }
-
-    // OWNER / CLIENTE SI NECESITA LICENCIA
-    if(!licenciaVal){
-      alert('Pon tu licencia');
-      btn.textContent = 'Iniciar sesión';
-      return;
-    }
-
-    const r2 = await fetch('/api/licencia/validar',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({key: licenciaVal})
-    });
-    const d2 = await r2.json();
-
-    if(d2.ok){
-      localStorage.setItem('usuario', data.usuario);
-      localStorage.setItem('rol', data.rol);
-      location.reload();
-    }else{
-      alert('Licencia vencida o invalida');
-      btn.textContent = 'Iniciar sesión';
-    }
-
+    const s = { usuario: data.usuario || usuario, nombre: data.nombre || usuario, rol: data.rol || 'empleado' };
+    state.session = s;
+    localStorage.setItem('session', JSON.stringify(s));
+    localStorage.setItem('rol', s.rol);
+    localStorage.setItem('usuario', s.usuario);
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').classList.add('active');
+    await loadAll(); renderShell(); goTo('dashboard');
   }catch(e){
-    console.log(e);
-    alert('Error de servidor');
-    btn.textContent = 'Iniciar sesión';
-  }
+    err.textContent='Error de servidor';
+  }finally{ btn.textContent='Iniciar sesión'; btn.disabled=false; }
 }
+function iniciarSesion(){ return doLogin(); }
 async function doRegister(){
   const btn = document.getElementById('btn-register');
   const err = document.getElementById('register-error');
@@ -434,12 +414,11 @@ async function doRegister(){
 
 function doLogout(){
   state.session = null;
-  localStorage.removeItem('session');
+  localStorage.clear();
   document.getElementById('app').classList.remove('active');
   document.getElementById('login-screen').style.display = 'flex';
+  const p = document.getElementById('panel-superadmin'); if(p) p.style.display='none';
   mostrarLogin();
-  document.getElementById('login-user').value = "";
-  document.getElementById('login-pass').value = "";
 }
 
 // ---------- permisos ----------
@@ -951,37 +930,6 @@ async function restablecerSistema(){
     location.reload();
   }catch(e){ toast(e.message); }
 }
-// ESTO EVITA EL BUCLE
-window.addEventListener('load', ()=>{
-  const rol = localStorage.getItem('rol');
-  const usuario = localStorage.getItem('usuario');
-  const loginBox = document.getElementById('login-box');
-  const registerBox = document.getElementById('register-box');
-  const appBox = document.getElementById('app-container') || document.getElementById('inventory-section') || document.querySelector('.container');
-
-  if(rol && usuario){
-    // Ya estás logueado, oculta login
-    if(loginBox) loginBox.style.display = 'none';
-    if(registerBox) registerBox.style.display = 'none';
-    // Muestra la app - tu app puede tener id diferente, ponle block a todo lo que no sea login
-    document.body.classList.add('logueado');
-    // Si tu app está oculta con display:none, muéstrala
-    const posibleApp = document.querySelectorAll('div');
-    posibleApp.forEach(d=>{
-      if(d.id !== 'login-box' && d.id !== 'register-box' && d.textContent.includes('Inventario')){
-        d.style.display = 'block';
-      }
-    });
-    console.log('Logueado como:', usuario, rol);
-  }else{
-    if(loginBox) loginBox.style.display = 'block';
-  }
-});
-
-function cerrarSesion(){
-  localStorage.clear();
-  location.reload();
-}
 
 // enter para iniciar sesión
 document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
@@ -999,19 +947,25 @@ window.addEventListener('error', function(e){
   }
 });
 
-// Auto-login si hay sesión guardada
+// Auto-login
 (async()=>{
   const sess = localStorage.getItem('session');
-  if(sess){
+  const rol = localStorage.getItem('rol');
+  if(sess || rol==='superadmin'){
     try{
-      const s = JSON.parse(sess);
-      state.session = s;
+      if(rol==='superadmin' && !sess){
+        state.session = { usuario:'superadmin', nombre:'Super Admin', rol:'superadmin' };
+      }else{
+        state.session = JSON.parse(sess);
+      }
       document.getElementById('login-screen').style.display='none';
       document.getElementById('app').classList.add('active');
-      await loadAll();
-      renderShell();
-      goTo('dashboard');
-    }catch(e){ console.log(e); }
+      await loadAll(); renderShell(); goTo('dashboard');
+      if(rol==='superadmin'){
+        document.getElementById('panel-superadmin').style.display='block';
+        cargarLics();
+      }
+    }catch(e){}
   }
 })();
 </script>
