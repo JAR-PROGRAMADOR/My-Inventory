@@ -74,6 +74,12 @@
     letter-spacing:.3px;
     border:1px solid transparent;
   }
+  .role-pill.superadmin{
+  background:#0f0f0f;
+  color:#FFD700;
+  border-color:#FFD700;
+  box-shadow: 0 0 0 1px rgba(255,215,0,.3);
+}
   /* Dueño: negro con rojo */
   .role-pill.dueño{
     background:#0f0f0f;
@@ -228,7 +234,8 @@
 const ROLES = {
   empleado: { label: "Empleado", nivel: 1 },
   supervisor: { label: "Supervisor", nivel: 2 },
-  dueño: { label: "Dueño", nivel: 3 }
+  dueño: { label: "Dueño", nivel: 3 },
+  superadmin: { label: "SuperAdmin", nivel: 99 }
 };
 
 let state = {
