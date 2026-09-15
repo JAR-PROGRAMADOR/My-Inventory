@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(__dirname));
 
 const db = mysql.createPool({
   host: process.env.DB_HOST,
@@ -20,7 +20,7 @@ const db = mysql.createPool({
   connectionLimit: 10
 });
 
-app.get('index.html', (req,res)=> res.sendFile('index.html',{root:'.'}));
+app.get('/', (req,res)=> res.sendFile('index.html',{root:'.'}));
 
 // PRODUCTOS COMPARTIDOS
 app.get('/api/productos', (req,res)=>{
