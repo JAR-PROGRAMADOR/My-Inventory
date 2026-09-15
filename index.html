@@ -558,7 +558,7 @@ function renderLicencias(){
   if(state.session.rol!== 'superadmin'){ goTo('dashboard'); return; }
   root.innerHTML = `
     <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px">
-      <h3 style="color:#FFD700">🔑 Generador de Licencias Master</h3>
+      <h3 style="color:#FFD700">Generador de Licencias Master</h3>
       <div style="display:flex; flex-wrap:wrap; gap:10px; margin:20px 0">
         <input id="lic_cliente" placeholder="Cliente / Empresa" style="flex:1; min-width:200px; padding:10px; border-radius:8px; background:#0a0a0a; border:1px solid #333; color:#fff">
         <input id="lic_cantidad" type="number" value="30" min="1" style="width:90px; padding:10px; border-radius:8px; background:#0a0a0a; border:1px solid #333; color:#fff">
