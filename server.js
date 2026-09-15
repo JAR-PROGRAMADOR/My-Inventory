@@ -66,23 +66,45 @@ app.get('/api/usuarios', (req,res)=>{
   });
 });
 
-app.post('/api/register', (req,res)=>{
-  const {nombre_completo, usuario, contrasena}=req.body;
-  db.query('SELECT * FROM usuarios WHERE usuario=?',[usuario], (err,existe)=>{
-    if(existe && existe.length>0) return res.status(400).json({message:'Ese usuario ya existe'});
-    db.query('SELECT COUNT(*) as total FROM usuarios', (err2,totalRes)=>{
-      const esPrimero = totalRes[0].total===0;
-      const rol_id=esPrimero?1:2; const activo=esPrimero?1:0; const pendiente=esPrimero?0:1;
-      // Guardamos en TODAS las columnas posibles para compatibilidad
-      db.query('INSERT INTO usuarios (nombre_completo, usuario, clave, password_hash, rol, rol_id, activo, pendiente) VALUES (?,?,?,?,?,?,?,?)',
-      [nombre_completo,usuario,contrasena,contrasena, esPrimero?'dueño':'empleado', rol_id,activo,pendiente], (err3)=>{
-        if(err3){ console.log(err3); return res.status(500).json(err3); }
-        res.json({ok:true, rol_id});
-      });
-    });
-  });
-});
+app.post('/api/register', async (req, res) => {
+  try {
+    const { nombre_completo, usuario, contrasena, nombre, password } = req.body;
+    const nombreFinal = nombre_completo || nombre;
+    const passFinal = contrasena || password;
+    const userFinal = (usuario||'').trim();
 
+    console.log('INTENTO REGISTRO:', userFinal, nombreFinal);
+
+    if(!nombreFinal ||!userFinal ||!passFinal){
+      return res.status(400).json({error: 'Faltan datos: nombre, usuario y contraseña son obligatorios'});
+    }
+
+    // Verifica tabla
+    const [exist] = await pool.query('SELECT id FROM usuarios WHERE usuario =?', [userFinal]);
+    if(exist.length > 0){
+      return res.status(400).json({error: `El usuario '${userFinal}' ya existe. Usa otro.`});
+    }
+
+    const [totalRows] = await pool.query('SELECT COUNT(*) as total FROM usuarios');
+    const total = totalRows[0].total;
+    const esPrimero = total === 0;
+
+    const rol_id = esPrimero? 1 : 2; // 1=Dueño, 2=Empleado
+    const pendiente = esPrimero? 0 : 1;
+
+    await pool.query(
+      'INSERT INTO usuarios (nombre_completo, usuario, contrasena, rol_id, pendiente) VALUES (?,?,?,?,?)',
+      [nombreFinal, userFinal, passFinal, rol_id, pendiente]
+    );
+
+    console.log('REGISTRADO OK:', userFinal, 'rol', rol_id);
+    return res.json({ok: true, rol_id, mensaje: esPrimero? 'Dueño creado' : 'Pendiente de aprobación'});
+
+  } catch (err) {
+    console.error('ERROR REAL EN /api/register:', err);
+    return res.status(500).json({error: 'Error interno: ' + err.message});
+  }
+});
 // LOGIN UNICO Y BUENO - SUPERADMIN SIEMPRE
 app.post('/api/login', (req,res)=>{
   const {usuario, clave} = req.body;
