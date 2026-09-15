@@ -581,8 +581,8 @@ async function generarLicenciaSuper(){
   const unidad = document.getElementById('lic_unidad').value;
   const r = await fetch('/api/licencia/generar',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente,cantidad,unidad})});
   const d = await r.json();
-  document.getElementById('lic_result').innerHTML = `<div style="background:#0f2a1a; border:1px solid #1f8a4a; padding:12px; border-radius:10px; color:#7CFFA0; margin-top:10px">KEY: <b style="font-family:monospace; font-size:15px">${d.key}</b> | ${cantidad} ${unidad} | ${cliente} <button onclick="navigator.clipboard.writeText('${d.key}')" style="margin-left:10px">Copiar</button></div>`;
-  cargarLicenciasSuper();
+ const keyGenerada = d.key || d.licencia?.clave || d.clave;
+document.getElementById('lic_result').innerHTML = `<div style="background:#0f2a1a; border:1px solid #1f8a4a; padding:12px; border-radius:10px; color:#7CFFA0">KEY: <b style="font-family:monospace; font-size:15px">${keyGenerada}</b> | ${cantidad} ${unidad} | ${cliente} <button onclick="navigator.clipboard.writeText('${keyGenerada}')" style="margin-left:10px">Copiar</button></div>`;
 }
 async function cargarLicenciasSuper(){
   try{

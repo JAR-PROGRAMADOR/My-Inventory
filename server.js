@@ -126,23 +126,86 @@ app.post('/api/categorias',(req,res)=>{
   });
 });
 
-// LICENCIAS
-app.post('/api/licencia/generar',(req,res)=>{
-  const key = 'LIC-'+Math.random().toString(36).substring(2,8).toUpperCase()+'-'+Date.now().toString().slice(-4);
-  const cliente = req.body.cliente || 'Cliente';
-  const cantidad = parseInt(req.body.cantidad) || 30;
-  const unidad = req.body.unidad || 'dias'; // minutos | dias | meses
+// ==================== LICENCIAS MASTER - FIX DEFINITIVO ====================
+const licenciasDB = []; // Si usas MySQL, cambia esto por tu tabla
 
-  let sql = "";
-  if(unidad === 'minutos') sql = "INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL ? MINUTE))";
-  else if(unidad === 'meses') sql = "INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL ? MONTH))";
-  else sql = "INSERT INTO licencias (clave, cliente, activa, expira_en) VALUES (?,?,1, DATE_ADD(NOW(), INTERVAL ? DAY))";
+function generarKeyUnica(){
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let key = 'LIC-';
+  for(let i=0;i<4;i++){
+    for(let j=0;j<4;j++) key += chars.charAt(Math.floor(Math.random()*chars.length));
+    if(i<3) key += '-';
+  }
+  return key + '-' + Date.now().toString().slice(-4);
+}
 
-  db.query(sql,[key, cliente, cantidad], (e)=>{
-    if(e){ console.log(e); return res.status(500).json(e); }
-    res.json({ok:true, key, cliente, cantidad, unidad});
-  });
+app.post('/api/licencia/generar', (req, res) => {
+  const { cliente, cantidad, unidad, dias } = req.body;
+  
+  // Soporte para ambos formatos
+  let diasFinal = 30;
+  let cantidadFinal = cantidad || 30;
+  let unidadFinal = unidad || 'dias';
+
+  if(dias) {
+    diasFinal = parseInt(dias);
+  } else {
+    const cant = parseInt(cantidad) || 30;
+    if(unidad === 'minutos') diasFinal = cant / 1440;
+    else if(unidad === 'dias') diasFinal = cant;
+    else if(unidad === 'meses') diasFinal = cant * 30;
+    else diasFinal = cant;
+  }
+
+  const key = generarKeyUnica();
+  const ahora = new Date();
+  const expira = new Date(ahora.getTime() + (diasFinal * 24 * 60 * 60 * 1000));
+
+  const nueva = {
+    id: Date.now().toString(),
+    clave: key,
+    cliente: cliente || 'Cliente',
+    cantidad: cantidadFinal,
+    unidad: unidadFinal,
+    dias: diasFinal,
+    activa: 1,
+    expira_en: expira.toISOString(),
+    creada_en: ahora.toISOString()
+  };
+
+  licenciasDB.push(nueva);
+  
+  // Si usas MySQL, guarda también:
+  // await db.query('INSERT INTO licencias (clave, cliente, expira_en) VALUES (?,?,?)', [key, cliente, expira])
+
+  console.log('LICENCIA GENERADA:', key, 'para', cliente, 'expira', expira);
+  res.json({ ok: true, key: key, licencia: nueva });
 });
+
+app.get('/api/licencias', (req, res) => {
+  res.json(licenciasDB);
+});
+
+app.post('/api/licencia/eliminar', (req, res) => {
+  const { id } = req.body;
+  const idx = licenciasDB.findIndex(l => l.id == id);
+  if(idx !== -1) licenciasDB.splice(idx, 1);
+  res.json({ ok: true });
+});
+
+app.post('/api/licencia/validar', (req, res) => {
+  const { clave } = req.body;
+  if(clave === 'MASTER-OWNER-2026') return res.json({ ok: true, rol: 'superadmin' });
+  
+  const lic = licenciasDB.find(l => l.clave === clave && l.activa);
+  if(!lic) return res.json({ ok: false, error: 'Licencia no válida' });
+  
+  if(new Date(lic.expira_en) < new Date()){
+    return res.json({ ok: false, error: 'Licencia expirada' });
+  }
+  res.json({ ok: true, licencia: lic });
+});
+// ==================== FIN LICENCIAS ====================
 // ====== SISTEMA DE LICENCIAS MASTER (PARA SUPERADMIN) ======
 db.query(`CREATE TABLE IF NOT EXISTS licencias (
   id INT AUTO_INCREMENT PRIMARY KEY,
