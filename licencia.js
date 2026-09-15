@@ -37,14 +37,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
       if(dataLogin.rol === 'superadmin'){
         // SUPERADMIN ENTRA SIN LICENCIA
-        window.location.href = '/';
+        window.location.href = 'index.html';
         return;
       }
       // Si es owner, ahora sí valida licencia
       if(!licencia){ alert('Pon tu licencia'); btn.textContent='Iniciar sesión'; return; }
       const rLic = await fetch('/api/licencia/validar',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:licencia})});
       const dataLic = await rLic.json();
-      if(dataLic.ok){ window.location.href='/'; }
+      if(dataLic.ok){ window.location.href='index.html'; }
       else { document.body.innerHTML += '<div style="color:red">Licencia vencida</div>'; btn.textContent='Iniciar sesión'; }
       return;
     } else {

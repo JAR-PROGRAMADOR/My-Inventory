@@ -16,7 +16,7 @@ const db = mysql.createPool({
   connectionLimit: 10
 });
 
-app.get('/', (req,res)=> res.sendFile('index.html',{root:'.'}));
+app.get('index.html', (req,res)=> res.sendFile('index.html',{root:'.'}));
 
 // PRODUCTOS COMPARTIDOS
 app.get('/api/productos', (req,res)=>{

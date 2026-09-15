@@ -10,7 +10,7 @@ async function login(){
     if(data.rol === 'superadmin'){
       alert('Bienvenido SUPERADMIN');
     }
-    window.location.href = '/'; // o donde tengas tu panel
+    window.location.href = 'index.html'; // o donde tengas tu panel
   } else {
     alert('Usuario o clave mal');
   }
