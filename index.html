@@ -531,21 +531,99 @@ const TITULOS = {
   licencias:"Licencias Master"
 };
 function goTo(view){
-  state.view = view;
-  document.getElementById('view-title').textContent = TITULOS[view];
-  marcarNavActiva();
+  state.currentView = view;
+  const titleEl = document.querySelector('.view-title, #page-title, h1');
+  if(titleEl) titleEl.textContent = TITULOS[view] || view;
+
+  const root = document.getElementById('main-content') || document.getElementById('view-root') || document.getElementById('content') || document.querySelector('main');
+
+  // marcar activo
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.toggle('active', n.dataset.view === view);
+  });
+
   const renderers = {
-  dashboard: renderDashboard, 
-  productos: renderProductos, 
-  movimientos: renderMovimientos,
-  reportes: renderReportes, 
-  categorias: renderCategorias, 
-  usuarios: renderUsuarios,
-  solicitudes: renderSolicitudes,
-  licencias: renderLicencias   // <-- ESTA LÍNEA NUEVA
-};
-  renderers[view]();
+    dashboard: renderDashboard,
+    productos: renderProductos,
+    movimientos: renderMovimientos,
+    reportes: renderReportes,
+    categorias: renderCategorias,
+    usuarios: renderUsuarios,
+    solicitudes: renderSolicitudes,
+    licencias: renderLicencias
+  };
+
+  if(renderers[view]) renderers[view]();
+  else if(root) root.innerHTML = `<div class="card" style="padding:20px">Vista ${view} no encontrada</div>`;
 }
+
+function renderDashboard(){
+  const root = document.getElementById('main-content') || document.getElementById('view-root') || document.getElementById('content') || document.querySelector('main');
+  if(!root) return;
+  try{
+    const productos = state.productos || [];
+    const total = productos.length;
+    const bajo = productos.filter(p=> (p.stock||0) <= (p.stock_minimo||5)).length;
+    const valor = productos.reduce((s,p)=> s + ((p.stock||0) * (p.precio_compra||0)), 0);
+    root.innerHTML = `
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:16px; margin-bottom:20px">
+        <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px"><h4 style="color:#888">Productos</h4><h2 style="color:#fff">${total}</h2></div>
+        <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px"><h4 style="color:#888">Stock Bajo</h4><h2 style="color:${bajo>0?'#ff4444':'#00ff88'}">${bajo}</h2></div>
+        <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px"><h4 style="color:#888">Valor Inventario</h4><h2 style="color:#fff">$${valor.toFixed(2)}</h2></div>
+      </div>
+      <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px">
+        <h3 style="color:#fff">Bienvenido SuperAdmin ${state.session.usuario||''}</h3>
+        <p style="color:#888">Sistema funcionando. Total: ${total} productos</p>
+        ${total===0?'<p style="color:#FFD700">Ve a Productos -> Nuevo producto para empezar</p>':''}
+      </div>
+    `;
+  }catch(e){
+    root.innerHTML = `<div style="color:red; padding:20px">Error Dashboard: ${e.message}</div>`;
+  }
+}
+
+function renderLicencias(){
+  const root = document.getElementById('main-content') || document.getElementById('view-root') || document.getElementById('content') || document.querySelector('main');
+  if(state.session.rol!== 'superadmin'){ goTo('dashboard'); return; }
+  root.innerHTML = `
+    <div class="card" style="padding:20px; background:#111; border:1px solid #333; border-radius:12px">
+      <h3 style="color:#FFD700">🔑 Generador de Licencias Master</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:10px; margin:20px 0">
+        <input id="lic_cliente" placeholder="Cliente / Empresa" style="flex:1; min-width:200px; padding:10px; border-radius:8px; background:#0a0a0a; border:1px solid #333; color:#fff">
+        <input id="lic_cantidad" type="number" value="30" min="1" style="width:90px; padding:10px; border-radius:8px; background:#0a0a0a; border:1px solid #333; color:#fff">
+        <select id="lic_unidad" style="width:130px; padding:10px; border-radius:8px; background:#0a0a0a; border:1px solid #333; color:#fff">
+          <option value="minutos">Minutos</option>
+          <option value="dias" selected>Días</option>
+          <option value="meses">Meses</option>
+        </select>
+        <button onclick="generarLicenciaSuper()" style="padding:10px 20px; background:#FFD700; color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer">Generar KEY</button>
+      </div>
+      <div id="lic_result"></div>
+      <div id="lic_lista" style="margin-top:20px"></div>
+    </div>
+  `;
+  cargarLicenciasSuper();
+}
+async function generarLicenciaSuper(){
+  const cliente = document.getElementById('lic_cliente').value || 'Cliente';
+  const cantidad = document.getElementById('lic_cantidad').value || 30;
+  const unidad = document.getElementById('lic_unidad').value;
+  const r = await fetch('/api/licencia/generar',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente,cantidad,unidad})});
+  const d = await r.json();
+  document.getElementById('lic_result').innerHTML = `<div style="background:#0f2a1a; border:1px solid #1f8a4a; padding:12px; border-radius:10px; color:#7CFFA0; margin-top:10px">KEY: <b style="font-family:monospace; font-size:15px">${d.key}</b> | ${cantidad} ${unidad} | ${cliente} <button onclick="navigator.clipboard.writeText('${d.key}')" style="margin-left:10px">Copiar</button></div>`;
+  cargarLicenciasSuper();
+}
+async function cargarLicenciasSuper(){
+  try{
+    const r = await fetch('/api/licencias'); const lista = await r.json();
+    const cont = document.getElementById('lic_lista');
+    if(!cont) return;
+    if(!lista.length){ cont.innerHTML='<p style="color:#888">No hay licencias</p>'; return; }
+    cont.innerHTML = `<table style="width:100%; color:#fff; border-collapse:collapse"><tr style="color:#888; border-bottom:1px solid #333"><th align="left">Clave</th><th>Cliente</th><th>Expira</th><th></th></tr>${lista.map(l=>`<tr style="border-bottom:1px solid #222"><td style="font-family:monospace; padding:8px">${l.clave}</td><td>${l.cliente||''}</td><td>${l.expira_en?new Date(l.expira_en).toLocaleString():''}</td><td><button onclick="fetch('/api/licencia/eliminar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'${l.id}'})}).then(()=>cargarLicenciasSuper())" style="background:#3a1a1a; color:#fff; border:none; padding:5px 10px; border-radius:5px">Borrar</button></td></tr>`).join('')}</table>`;
+  }catch(e){ console.log(e); }
+}
+
+
 
 // ---------- DASHBOARD ----------
 function renderDashboard(){
@@ -890,6 +968,7 @@ function renderSolicitudes(){
   const pendientes = state.usuarios.filter(u => u.pendiente==1||u.pendiente==true);
   if(!pendientes.length){
     root.innerHTML = '<div class="panel"><div class="empty">No hay solicitudes pendientes.</div></div>';
+    <div class="nav-item" data-view="licencias" onclick="goTo('licencias')" style="color:#FFD700; border:1px solid #FFD700;">🔑 Licencias Master</div>
     return;
   }
   function renderLicencias(){
