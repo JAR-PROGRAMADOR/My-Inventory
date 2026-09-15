@@ -3,6 +3,7 @@ import mysql from 'mysql2';
 import cors from 'cors';
 const app = express();
 app.use(cors());
+app.use(express.static(__dirname));
 app.use(express.json());
 app.use(express.static('.'));
 
