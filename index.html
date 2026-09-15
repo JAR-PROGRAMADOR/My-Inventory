@@ -524,17 +524,34 @@ function goTo(view){
   else if(root) root.innerHTML = `<div class="card" style="padding:20px">Vista ${view} no encontrada</div>`;
 }
 
-// ---------- DASHBOARD ----------
 function renderDashboard(){
   const root = document.getElementById('view-root');
-  const totalSKUs = state.productos.length;
-  const bajos = state.productos.filter(p => p.stock <= p.stock_minimo);
-  const totalUnidades = state.productos.reduce((a,p)=>a+p.stock,0);
-  let valorInventario = null;
-  if(puede('ver_costos')){
-    valorInventario = state.productos.reduce((a,p)=> a + p.stock * p.precio_compra, 0);
-  }
+  if(!root) return;
+  try{
+    const productos = state.productos || [];
+    const totalSKUs = productos.length;
+    const bajoStock = productos.filter(p=> (p.stock||0) <= (p.stock_minimo||5)).length;
+    const valorTotal = productos.reduce((s,p)=> s + ((p.stock||0)*(p.precio_compra||0)), 0);
+    const valorVenta = productos.reduce((s,p)=> s + ((p.stock||0)*(p.precio_venta||0)), 0);
 
+    root.innerHTML = `
+      <div class="cards">
+        <div class="kpi"><div class="n">${totalSKUs}</div><div class="l">Total Productos</div></div>
+        <div class="kpi alert"><div class="n">${bajoStock}</div><div class="l">Bajo Stock</div></div>
+        <div class="kpi"><div class="n">$${valorTotal.toLocaleString('es-CO')}</div><div class="l">Valor Costo</div></div>
+        <div class="kpi"><div class="n">$${valorVenta.toLocaleString('es-CO')}</div><div class="l">Valor Venta</div></div>
+      </div>
+      <div class="panel">
+        <h3>Resumen del sistema</h3>
+        <p style="color:var(--muted); font-size:13px">Inventario actualizado. Tienes ${totalSKUs} productos registrados, ${bajoStock} con stock bajo.</p>
+        ${totalSKUs===0?'<div class="empty">Aún no hay productos. Ve a Productos → + Nuevo producto</div>': tablaProductosSimple(productos.slice(0,5))}
+      </div>
+    `;
+  }catch(e){
+    console.error(e);
+    root.innerHTML = `<div style="color:red; padding:20px">Error en dashboard: ${e.message}</div>`;
+  }
+}
 
 function renderLicencias(){
   const root = document.getElementById('main-content') || document.getElementById('view-root') || document.getElementById('content') || document.querySelector('main');
@@ -579,32 +596,7 @@ async function cargarLicenciasSuper(){
 
 
 
-// ---------- DASHBOARD ----------
-function renderDashboard(){
-  const root = document.getElementById('view-root');
-  if(!root) return;
-  try{
-    const productos = state.productos || [];
-    const totalSKUs = (state.productos || []).length;
-    const bajoStock = productos.filter(p=> (p.stock||0) <= (p.stock_minimo||5)).length;
-    const valorTotal = productos.reduce((s,p)=> s + ((p.stock||0)*(p.precio_compra||0)), 0);
 
-    root.innerHTML = `
-      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px">
-        <div class="card"><h4>Productos</h4><h2>${totalSKUs}</h2></div>
-        <div class="card"><h4>Bajo Stock</h4><h2 style="color:${bajoStock>0?'red':'#0f0'}">${bajoStock}</h2></div>
-        <div class="card"><h4>Valor</h4><h2>$${valorTotal.toFixed(2)}</h2></div>
-      </div>
-      <div class="card" style="margin-top:16px; padding:20px">
-        <h3>Bienvenido ${state.session?.usuario || ''} - ${state.session?.rol || ''}</h3>
-        <p>Sistema OK. Si ves esto, el bucle se acabó.</p>
-      </div>
-    `;
-  }catch(e){
-    console.error(e);
-    root.innerHTML = `<div style="color:red; padding:20px">Error en dashboard: ${e.message}</div>`;
-  }
-}
 function tablaProductosSimple(lista){
   return `<table><thead><tr><th>Código</th><th>Producto</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>
     ${lista.map(p=>`<tr><td class="mono">${p.codigo}</td><td>${p.nombre}</td>
