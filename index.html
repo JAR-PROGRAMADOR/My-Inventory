@@ -423,18 +423,19 @@ function doLogout(){
 
 // ---------- permisos ----------
 function puede(accion){
+  if(state.session.rol === 'superadmin') return true; // SUPERADMIN PUEDE TODO
   const rol = state.session.rol;
   const tabla = {
-    ver_costos: ["supervisor","dueño","superadmin"],
-    crear_producto: ["supervisor","dueño","superadmin"],
-    editar_producto: ["supervisor","dueño","superadmin"],
-    eliminar_producto: ["dueño","superadmin"],
-    registrar_movimiento: ["empleado","supervisor","dueño","superadmin"],
-    ajustar_stock_manual: ["supervisor","dueño","superadmin"],
-    ver_reportes: ["supervisor","dueño","superadmin"],
-    gestionar_usuarios: ["dueño","superadmin"], // <-- arreglado, ahora si puede eliminar
-    gestionar_categorias: ["supervisor","dueño","superadmin"], // <-- arreglado, ahora si puede agregar
-    aprobar_registros: ["supervisor","dueño","superadmin"],
+    ver_costos: ["supervisor","dueño"],
+    crear_producto: ["supervisor","dueño"],
+    editar_producto: ["supervisor","dueño"],
+    eliminar_producto: ["dueño"],
+    registrar_movimiento: ["empleado","supervisor","dueño"],
+    ajustar_stock_manual: ["supervisor","dueño"],
+    ver_reportes: ["supervisor","dueño"],
+    gestionar_usuarios: ["dueño"],
+    gestionar_categorias: ["supervisor","dueño"],
+    aprobar_registros: ["supervisor","dueño"],
     gestionar_licencias: ["superadmin"],
   };
   return (tabla[accion] || []).includes(rol);
