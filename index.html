@@ -356,12 +356,11 @@ async function iniciarSesion(){
 
     // Si es SUPERADMIN, entra directo SIN pedir licencia
     if(data.rol === 'superadmin'){
-      localStorage.setItem('usuario','superadmin');
-      localStorage.setItem('rol','superadmin');
-      window.location.href = '/index.html';
-      location.reload();
-      return;
-    }
+    localStorage.setItem('usuario','superadmin');
+    localStorage.setItem('rol','superadmin');
+    location.reload(); // <--- aquí
+  return;
+}
 
     // Si es owner/cliente, ahora si valida licencia
     const key = licenciaInput.value.trim();
