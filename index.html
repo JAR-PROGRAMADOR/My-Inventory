@@ -951,6 +951,37 @@ async function restablecerSistema(){
     location.reload();
   }catch(e){ toast(e.message); }
 }
+// ESTO EVITA EL BUCLE
+window.addEventListener('load', ()=>{
+  const rol = localStorage.getItem('rol');
+  const usuario = localStorage.getItem('usuario');
+  const loginBox = document.getElementById('login-box');
+  const registerBox = document.getElementById('register-box');
+  const appBox = document.getElementById('app-container') || document.getElementById('inventory-section') || document.querySelector('.container');
+
+  if(rol && usuario){
+    // Ya estás logueado, oculta login
+    if(loginBox) loginBox.style.display = 'none';
+    if(registerBox) registerBox.style.display = 'none';
+    // Muestra la app - tu app puede tener id diferente, ponle block a todo lo que no sea login
+    document.body.classList.add('logueado');
+    // Si tu app está oculta con display:none, muéstrala
+    const posibleApp = document.querySelectorAll('div');
+    posibleApp.forEach(d=>{
+      if(d.id !== 'login-box' && d.id !== 'register-box' && d.textContent.includes('Inventario')){
+        d.style.display = 'block';
+      }
+    });
+    console.log('Logueado como:', usuario, rol);
+  }else{
+    if(loginBox) loginBox.style.display = 'block';
+  }
+});
+
+function cerrarSesion(){
+  localStorage.clear();
+  location.reload();
+}
 
 // enter para iniciar sesión
 document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
