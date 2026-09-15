@@ -110,66 +110,49 @@ function initLicenciasV2(){
   });
   db.query(`CREATE TABLE IF NOT EXISTS categorias (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) UNIQUE NOT NULL)`, ()=>{});
 }
-// === SISTEMA SUPERADMIN + USUARIOS ===
 function initSistema(){
-  db.query(`CREATE TABLE IF NOT EXISTS licencias (id INT AUTO_INCREMENT PRIMARY KEY, clave VARCHAR(100) UNIQUE NOT NULL, cliente VARCHAR(100), activa TINYINT(1) DEFAULT 1, creada_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP, expira_en DATETIME NULL)`, ()=>{
-    db.query("INSERT IGNORE INTO licencias (clave, cliente, expira_en) VALUES ('MASTER-OWNER-2026','Dueño', DATE_ADD(NOW(), INTERVAL 10 YEAR))", ()=>{});
-    db.query("ALTER TABLE licencias ADD COLUMN IF NOT EXISTS expira_en DATETIME NULL", ()=>{});
+  db.query(`CREATE TABLE IF NOT EXISTS usuarios (id INT AUTO_INCREMENT PRIMARY KEY, usuario VARCHAR(100) UNIQUE, clave VARCHAR(100), rol VARCHAR(20))`, ()=>{
+    db.query(`INSERT IGNORE INTO usuarios (usuario, clave, rol) VALUES ('superadmin','Super2026!','superadmin'), ('owner','owner123','owner')`);
   });
-  db.query(`CREATE TABLE IF NOT EXISTS categorias (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) UNIQUE NOT NULL)`, ()=>{});
-  db.query(`CREATE TABLE IF NOT EXISTS usuarios (id INT AUTO_INCREMENT PRIMARY KEY, usuario VARCHAR(100) UNIQUE NOT NULL, clave VARCHAR(100) NOT NULL, rol VARCHAR(20) DEFAULT 'owner')`, ()=>{
-    db.query("INSERT IGNORE INTO usuarios (usuario, clave, rol) VALUES ('superadmin','Super2026!','superadmin')", ()=>{});
-    db.query("INSERT IGNORE INTO usuarios (usuario, clave, rol) VALUES ('owner','owner123','owner')", ()=>{});
-  });
+  db.query(`CREATE TABLE IF NOT EXISTS licencias (id INT AUTO_INCREMENT PRIMARY KEY, clave VARCHAR(100) UNIQUE, cliente VARCHAR(100), activa TINYINT(1) DEFAULT 1, expira_en DATETIME)`, ()=>{});
+  db.query(`CREATE TABLE IF NOT EXISTS categorias (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) UNIQUE)`, ()=>{});
 }
 initSistema();
 
-// Validar licencia
-app.post('/api/licencia/validar',(req,res)=>{
-  const k=req.body.key;
-  if(k==='MASTER-OWNER-2026') return res.json({ok:true, master:true});
-  db.query("SELECT * FROM licencias WHERE clave=? AND activa=1 AND (expira_en IS NULL OR expira_en > NOW())",[k],(e,r)=>{ res.json({ok: r && r.length>0}); });
-});
-
-// Login superadmin
-app.post('/api/superadmin/login',(req,res)=>{
+// LOGIN UNICO PARA TODOS - ESTE ES EL QUE QUIERES
+app.post('/api/login', (req,res)=>{
   const {usuario, clave} = req.body;
-  db.query("SELECT * FROM usuarios WHERE usuario=? AND clave=? AND rol='superadmin'",[usuario, clave],(e,r)=>{
-    if(r && r.length>0) res.json({ok:true});
-    else res.json({ok:false});
+  db.query("SELECT * FROM usuarios WHERE usuario=? AND clave=?", [usuario, clave], (e, rows)=>{
+    if(rows && rows.length > 0){
+      return res.json({ok:true, usuario: rows[0].usuario, rol: rows[0].rol});
+    }
+    // Si no es usuario, intenta como licencia vieja
+    if(usuario === 'MASTER-OWNER-2026') return res.json({ok:true, usuario:'owner', rol:'owner'});
+    return res.json({ok:false});
   });
 });
 
-// Licencias
-app.post('/api/licencia/generar',(req,res)=>{
-  const cliente = req.body.cliente || 'Cliente';
-  const dias = parseInt(req.body.dias) || 30;
-  const nuevaKey = 'LIC-'+Math.random().toString(36).substring(2,7).toUpperCase()+'-'+Date.now().toString().slice(-4);
-  db.query("INSERT INTO licencias (clave, cliente, expira_en) VALUES (?,?, DATE_ADD(NOW(), INTERVAL? DAY))", [nuevaKey, cliente, dias], (err)=>{
-    if(err) return res.status(500).json({error: err.message});
-    res.json({key: nuevaKey, cliente, dias});
-  });
-});
-app.get('/api/licencias',(req,res)=>{ db.query("SELECT *, DATEDIFF(expira_en, NOW()) as dias_restantes FROM licencias ORDER BY id DESC", (e,r)=> res.json(r||[])); });
-app.post('/api/licencia/eliminar',(req,res)=>{ db.query("DELETE FROM licencias WHERE id=?",[req.body.id], ()=> res.json({ok:true})); });
-
-// USUARIOS - RESTAURADO
-app.get('/api/usuarios',(req,res)=>{ db.query("SELECT id, usuario, rol FROM usuarios", (e,r)=> res.json(r||[])); });
-app.post('/api/usuario/eliminar',(req,res)=>{
-  if(req.body.usuario==='superadmin') return res.status(403).json({error:'No puedes borrar al superadmin'});
-  db.query("DELETE FROM usuarios WHERE id=?",[req.body.id], ()=> res.json({ok:true}));
-});
-app.post('/api/usuario/editar',(req,res)=>{
-  db.query("UPDATE usuarios SET usuario=?, clave=? WHERE id=?",[req.body.usuario, req.body.clave, req.body.id], ()=> res.json({ok:true}));
-});
-
-// CATEGORIAS
+// CATEGORIAS ILIMITADAS - YA SIN BLOQUEO
 app.get('/api/categorias',(req,res)=>{ db.query("SELECT * FROM categorias", (e,r)=> res.json(r||[])); });
 app.post('/api/categorias',(req,res)=>{
   const nombre = req.body.nombre?.trim();
-  if(!nombre) return res.status(400).json({error:'vacio'});
-  if(/\d/.test(nombre)) return res.status(400).json({error:'No numeros'});
-  db.query("INSERT INTO categorias (nombre) VALUES (?)",[nombre], (e)=>{ if(e) return res.status(500).json({error:e.message}); res.json({ok:true}); });
+  if(!nombre) return res.status(400).json({error:'vacío'});
+  db.query("INSERT INTO categorias (nombre) VALUES (?)",[nombre], (e)=>{
+    if(e) return res.status(400).json({error:'Ya existe'});
+    res.json({ok:true});
+  });
+});
+app.post('/api/categorias/borrar',(req,res)=>{
+  db.query("DELETE FROM categorias WHERE nombre=?",[req.body.nombre], ()=> res.json({ok:true}));
+});
+
+// LICENCIAS - SOLO SI ERES SUPERADMIN TE DEJA USARLAS
+app.get('/api/licencias',(req,res)=>{ db.query("SELECT * FROM licencias", (e,r)=> res.json(r||[])); });
+app.post('/api/licencia/generar',(req,res)=>{
+  const key = 'LIC-'+Math.random().toString(36).substring(2,8).toUpperCase();
+  const cliente = req.body.cliente || 'Cliente';
+  const dias = req.body.dias || 30;
+  db.query("INSERT INTO licencias (clave, cliente, expira_en) VALUES (?,?, DATE_ADD(NOW(), INTERVAL? DAY))",[key, cliente, dias], ()=> res.json({key, cliente, dias}));
 });
 const PORT = process.env.PORT || 12000;
 app.listen(PORT, ()=> console.log('Servidor corriendo '+PORT));
