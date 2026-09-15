@@ -103,7 +103,7 @@ app.delete('/api/usuarios/:id', (req,res)=>{
 function initLicenciasV2(){
   db.query(`CREATE TABLE IF NOT EXISTS licencias (id INT AUTO_INCREMENT PRIMARY KEY, clave VARCHAR(100) UNIQUE NOT NULL, cliente VARCHAR(100), activa TINYINT(1) DEFAULT 1, creada_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP, expira_en DATETIME NULL)`, (e)=>{
     if(!e){
-      db.query("INSERT IGNORE INTO licencias (clave, cliente, expira_en) VALUES ('MASTER-OWNER-2026','Dueño', DATE_ADD(NOW(), INTERVAL 10 YEAR))", ()=>{});
+      db.query("INSERT IGNORE INTO licencias (clave, cliente, activa, expira_en) VALUES ('MASTER-OWNER-2026','SuperAdmin Master',1, DATE_ADD(NOW(), INTERVAL 10 YEAR))");
       // intenta agregar columna si la tabla es vieja
       db.query("ALTER TABLE licencias ADD COLUMN IF NOT EXISTS expira_en DATETIME NULL", ()=>{});
     }

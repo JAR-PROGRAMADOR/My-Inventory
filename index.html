@@ -301,7 +301,7 @@ function toast(msg){
   window._toastTimer = setTimeout(()=> t.style.display='none', 2600);
 }
 
-// ---------- validación central (números vs texto, stock negativo) ----------
+// ---------- ación central (números vs texto, stock negativo) ----------
 function esEnteroValido(v){ return /^[0-9]+$/.test(String(v).trim()); }
 function esPrecioValido(v){ return /^[0-9]+(\.[0-9]{1,2})?$/.test(String(v).trim()); }
 function esSoloLetras(v){ return /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,50}$/.test(String(v).trim()); }
