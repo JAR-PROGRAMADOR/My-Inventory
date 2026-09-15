@@ -135,11 +135,12 @@ app.post('/api/licencia/eliminar',(req,res)=>{
   db.query("DELETE FROM licencias WHERE id=?",[req.body.id], ()=> res.json({ok:true}));
 });
 
-// === CATEGORIAS ILIMITADAS ===
+db.query(`CREATE TABLE IF NOT EXISTS categorias (id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) UNIQUE NOT NULL)`, ()=>{});
 app.get('/api/categorias',(req,res)=>{ db.query("SELECT * FROM categorias", (e,r)=> res.json(r||[])); });
 app.post('/api/categorias',(req,res)=>{
   const nombre = req.body.nombre?.trim();
-  if(!nombre) return res.status(400).json({error:'nombre vacío'});
+  if(!nombre) return res.status(400).json({error:'vacio'});
+  if(/\d/.test(nombre)) return res.status(400).json({error:'La categoria no puede tener numeros'});
   db.query("INSERT INTO categorias (nombre) VALUES (?)",[nombre], (e)=>{ if(e) return res.status(500).json({error:e.message}); res.json({ok:true}); });
 });
 const PORT = process.env.PORT || 12000;
