@@ -524,34 +524,17 @@ function goTo(view){
   else if(root) root.innerHTML = `<div class="card" style="padding:20px">Vista ${view} no encontrada</div>`;
 }
 
+// ---------- DASHBOARD ----------
 function renderDashboard(){
   const root = document.getElementById('view-root');
-  if(!root) return;
-  try{
-    const productos = state.productos || [];
-    const totalSKUs = productos.length;
-    const bajoStock = productos.filter(p=> (p.stock||0) <= (p.stock_minimo||5)).length;
-    const valorTotal = productos.reduce((s,p)=> s + ((p.stock||0)*(p.precio_compra||0)), 0);
-    const valorVenta = productos.reduce((s,p)=> s + ((p.stock||0)*(p.precio_venta||0)), 0);
-
-    root.innerHTML = `
-      <div class="cards">
-        <div class="kpi"><div class="n">${totalSKUs}</div><div class="l">Total Productos</div></div>
-        <div class="kpi alert"><div class="n">${bajoStock}</div><div class="l">Bajo Stock</div></div>
-        <div class="kpi"><div class="n">$${valorTotal.toLocaleString('es-CO')}</div><div class="l">Valor Costo</div></div>
-        <div class="kpi"><div class="n">$${valorVenta.toLocaleString('es-CO')}</div><div class="l">Valor Venta</div></div>
-      </div>
-      <div class="panel">
-        <h3>Resumen del sistema</h3>
-        <p style="color:var(--muted); font-size:13px">Inventario actualizado. Tienes ${totalSKUs} productos registrados, ${bajoStock} con stock bajo.</p>
-        ${totalSKUs===0?'<div class="empty">Aún no hay productos. Ve a Productos → + Nuevo producto</div>': tablaProductosSimple(productos.slice(0,5))}
-      </div>
-    `;
-  }catch(e){
-    console.error(e);
-    root.innerHTML = `<div style="color:red; padding:20px">Error en dashboard: ${e.message}</div>`;
+  const totalSKUs = state.productos.length;
+  const bajos = state.productos.filter(p => p.stock <= p.stock_minimo);
+  const totalUnidades = state.productos.reduce((a,p)=>a+p.stock,0);
+  let valorInventario = null;
+  if(puede('ver_costos')){
+    valorInventario = state.productos.reduce((a,p)=> a + p.stock * p.precio_compra, 0);
   }
-}
+
 
 function renderLicencias(){
   const root = document.getElementById('main-content') || document.getElementById('view-root') || document.getElementById('content') || document.querySelector('main');
