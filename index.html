@@ -159,6 +159,8 @@
       <label>Contraseña</label>
       <input id="login-pass" type="password" autocomplete="current-password">
     </div>
+    <input id="licencia-key" placeholder="Key de Licencia" style="margin-top:8px; width:100%; padding:10px; border-radius:8px; border:1px solid #ccc">
+    <div>
     <button class="btn" style="width:100%" id="btn-login" onclick="doLogin()">Iniciar sesión</button>
     <div class="error-msg" id="login-error"></div>
     <p style="text-align:center;margin:16px 0 0;font-size:13px;">
@@ -337,6 +339,18 @@ function mostrarLogin(){
 }
 
 async function doLogin(){
+    const errEl = document.getElementById('login-error');
+  const keyVal = document.getElementById('licencia-key').value.trim();
+  if(!keyVal){ errEl.textContent = "Ingresa tu Key de licencia"; return; }
+  try{
+    const r = await fetch('/api/licencia/validar', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key: keyVal})});
+    const j = await r.json();
+    if(!j.ok) throw new Error("Licencia no válida o desactivada");
+  }catch(e){
+    errEl.textContent = e.message;
+    return;
+  }
+  // --- DE AQUI PARA ABAJO DEJA TU CODIGO ORIGINAL TAL CUAL ---
   const btn = document.getElementById('btn-login');
   const err = document.getElementById('login-error');
   err.style.color = 'var(--danger)';
