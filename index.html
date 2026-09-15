@@ -961,5 +961,27 @@ window.addEventListener('error', function(e){
 </script>
 <script src="licencia.js"></script>
 <script src="fix-categorias.js"></script>
+<div id="panel-superadmin" style="display:none; border:2px solid red; padding:15px; border-radius:12px; margin:15px;">
+  <h3>Panel SuperAdmin (solo tú lo ves)</h3>
+  <input id="cli" placeholder="Nombre cliente"><select id="dias"><option value="1">1 día</option><option value="30" selected>30 días</option><option value="365">1 año</option></select>
+  <button onclick="genLic()">Generar Licencia</button>
+  <div id="resLic"></div>
+  <div id="listaLic"></div>
+</div>
+<script>
+if(localStorage.getItem('rol')==='superadmin'){
+  document.getElementById('panel-superadmin').style.display='block';
+}
+async function genLic(){
+  const cliente=document.getElementById('cli').value; const dias=document.getElementById('dias').value;
+  const r=await fetch('/api/licencia/generar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cliente,dias})});
+  const j=await r.json(); document.getElementById('resLic').innerHTML='KEY: <b>'+j.key+'</b>'; cargarLics();
+}
+async function cargarLics(){
+  const r=await fetch('/api/licencias'); const data=await r.json();
+  document.getElementById('listaLic').innerHTML=data.map(l=>`${l.clave} - ${l.cliente} <button onclick="fetch('/api/licencia/eliminar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:${'${l.id}'}})}).then(()=>cargarLics())">Borrar</button>`).join('<br>');
+}
+if(localStorage.getItem('rol')==='superadmin') cargarLics();
+</script>
 </body>
 </html>
