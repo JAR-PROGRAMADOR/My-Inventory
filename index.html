@@ -967,43 +967,7 @@ function renderSolicitudes(){
   if(!pendientes.length){
     root.innerHTML = '<div class="panel"><div class="empty">No hay solicitudes pendientes.</div></div>';
     return;
-    <div class="nav-item" data-view="licencias" onclick="goTo('licencias')" style="color:#FFD700; border:1px solid #FFD700;">🔑 Licencias Master</div>
   }
-  function renderLicencias(){
-  if(state.session.rol !== 'superadmin') return;
-  document.getElementById('main-content').innerHTML = `
-    <div class="card" style="padding:20px">
-      <h3>🔑 Generador de Licencias Master</h3>
-      <div style="display:grid; grid-template-columns: 1fr 100px 130px auto; gap:10px; margin:20px 0">
-        <input id="lic_cliente" placeholder="Cliente / Empresa" style="padding:10px; border-radius:8px; background:#111; border:1px solid #333; color:#fff">
-        <input id="lic_cantidad" type="number" value="30" style="padding:10px; border-radius:8px; background:#111; border:1px solid #333; color:#fff">
-        <select id="lic_unidad" style="padding:10px; border-radius:8px; background:#111; border:1px solid #333; color:#fff">
-          <option value="minutos">Minutos</option>
-          <option value="dias" selected>Días</option>
-          <option value="meses">Meses</option>
-        </select>
-        <button onclick="generarLicenciaSuper()" class="btn btn-primary">Generar KEY</button>
-      </div>
-      <div id="lic_result"></div>
-      <div id="lic_lista" style="margin-top:20px"></div>
-    </div>
-  `;
-  cargarLicenciasSuper();
-}
-
-async function generarLicenciaSuper(){
-  const cliente = document.getElementById('lic_cliente').value || 'Cliente';
-  const cantidad = document.getElementById('lic_cantidad').value;
-  const unidad = document.getElementById('lic_unidad').value;
-  const r = await fetch('/api/licencia/generar',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cliente,cantidad,unidad})});
-  const d = await r.json();
-  document.getElementById('lic_result').innerHTML = `<div style="background:#0f2a1a; border:1px solid #1f8a4a; padding:12px; border-radius:10px; color:#7CFFA0; margin-top:10px">KEY: <b style="font-family:monospace">${d.key}</b> - ${cantidad} ${unidad} - Cliente: ${cliente} <button onclick="navigator.clipboard.writeText('${d.key}')">Copiar</button></div>`;
-  cargarLicenciasSuper();
-}
-async function cargarLicenciasSuper(){
-  const r = await fetch('/api/licencias'); const lista = await r.json();
-  document.getElementById('lic_lista').innerHTML = `<table class="table"><tr><th>Clave</th><th>Cliente</th><th>Expira</th><th></th></tr>${lista.map(l=>`<tr><td style="font-family:monospace">${l.clave}</td><td>${l.cliente||''}</td><td>${l.expira_en?new Date(l.expira_en).toLocaleString():''}</td><td><button onclick="fetch('/api/licencia/eliminar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'${l.id}'})}).then(()=>cargarLicenciasSuper())">Borrar</button></td></tr>`).join('')}</table>`;
-}
   const esDueño = state.session.rol === 'dueño';
   root.innerHTML = `
     <div class="panel">
