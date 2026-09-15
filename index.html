@@ -371,7 +371,7 @@ async function iniciarSesion(){
     if(d2.ok){
       localStorage.setItem('usuario', data.usuario);
       localStorage.setItem('rol', data.rol);
-      window.location.href = '/dashboard.html';
+      window.location.href = '/';
     } else {
       alert('Licencia vencida o invalida');
       btn.textContent='Iniciar sesión';
